@@ -11,7 +11,10 @@
     "start": "node server/index.js",
     "migrate": "node server/scripts/migrate.js",
     "seed": "node server/scripts/seed.js",
-    "setup": "npm install && cd client && npm install && cd .. && npm run migrate && npm run seed"
+    "setup": "npm install && cd client && npm install && cd .. && npm run migrate && npm run seed",
+    "postinstall": "npm run migrate",
+    "deploy:railway": "npm run migrate && npm start",
+    "deploy:render": "npm run migrate && npm start"
   },
   "dependencies": {
     "express": "^4.18.2",
