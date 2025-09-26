@@ -84,8 +84,64 @@ socketHandler(io);
 // Inicializar banco de dados e servidor
 async function startServer() {
   try {
+    console.log('🔄 Inicializando banco de dados...');
     await initDatabase();
     console.log('✅ Banco de dados inicializado');
+    
+    // Executar migração de usuários automaticamente
+    try {
+      console.log('🔄 Verificando migração de usuários...');
+      const { createConnection, runQuery } = require('./database/init');
+      const db = createConnection();
+      
+      // Tentar adicionar campos se não existirem
+      try {
+        await runQuery(db, `ALTER TABLE admins ADD COLUMN role TEXT DEFAULT 'admin'`);
+        console.log('✅ Campo role adicionado');
+      } catch (e) {
+        console.log('ℹ️ Campo role já existe');
+      }
+      
+      try {
+        await runQuery(db, `ALTER TABLE admins ADD COLUMN status TEXT DEFAULT 'approved'`);
+        console.log('✅ Campo status adicionado');
+      } catch (e) {
+        console.log('ℹ️ Campo status já existe');
+      }
+      
+      // Criar admin padrão se não existir nenhum
+      try {
+        const { getQuery } = require('./database/init');
+        const adminCount = await runQuery(db, 'SELECT COUNT(*) as count FROM admins');
+        
+        if (adminCount.count === 0) {
+          console.log('🔄 Criando admin padrão...');
+          const bcrypt = require('bcrypt');
+          const passwordHash = await bcrypt.hash(process.env.DEFAULT_ADMIN_PASSWORD || 'admin123', 12);
+          
+          await runQuery(db, `
+            INSERT INTO admins (name, email, password_hash, role, status) 
+            VALUES (?, ?, ?, 'superadmin', 'approved')
+          `, [
+            process.env.DEFAULT_ADMIN_NAME || 'Administrador',
+            process.env.DEFAULT_ADMIN_EMAIL || 'admin@quiz.com',
+            passwordHash
+          ]);
+          
+          console.log('✅ Admin padrão criado:', {
+            email: process.env.DEFAULT_ADMIN_EMAIL || 'admin@quiz.com',
+            password: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123'
+          });
+        }
+      } catch (adminError) {
+        console.error('⚠️ Erro ao criar admin padrão:', adminError.message);
+      }
+      
+      db.close();
+      console.log('✅ Migração verificada');
+    } catch (migrationError) {
+      console.error('⚠️ Aviso na migração:', migrationError.message);
+    }
     
     server.listen(PORT, () => {
       console.log(`🚀 Servidor rodando na porta ${PORT}`);

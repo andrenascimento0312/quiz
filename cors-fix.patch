@@ -1,0 +1,54 @@
+## CORREÇÃO DE CORS - APLICAR MANUALMENTE
+
+### Problema:
+CORS bloqueando requisições porque URL tem/não tem barra final
+
+### Arquivo: server/index.js
+
+Substituir as linhas 16-47 por:
+
+```javascript
+// Configuração CORS mais robusta
+const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
+const corsOrigins = [
+  "http://localhost:5173", 
+  "http://192.168.1.100:5173"
+];
+
+// Adicionar URLs de produção (com e sem barra final)
+if (frontendUrl) {
+  corsOrigins.push(frontendUrl);
+  corsOrigins.push(frontendUrl.replace(/\/$/, '')); // Remove barra final
+  corsOrigins.push(frontendUrl + '/'); // Adiciona barra final
+}
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: corsOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+const PORT = process.env.PORT || 3001;
+
+// Middleware de segurança
+app.use(helmet());
+
+app.use(cors({
+  origin: corsOrigins,
+  credentials: true
+}));
+```
+
+### Após aplicar:
+1. Commit e push para o GitHub
+2. Railway fará deploy automático
+3. Teste o login novamente
+
+### Alternativa Rápida:
+No Railway, edite a variável FRONTEND_URL:
+- De: https://quiz-ten-beta-25.vercel.app/
+- Para: https://quiz-ten-beta-25.vercel.app (sem barra)
