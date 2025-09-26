@@ -13,11 +13,25 @@ const superadminRoutes = require('./routes/superadmin');
 const socketHandler = require('./socket/socketHandler');
 const { initDatabase } = require('./database/init');
 
+// Configuração CORS mais robusta
+const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
+const corsOrigins = [
+  "http://localhost:5173", 
+  "http://192.168.1.100:5173"
+];
+
+// Adicionar URLs de produção (com e sem barra final)
+if (frontendUrl) {
+  corsOrigins.push(frontendUrl);
+  corsOrigins.push(frontendUrl.replace(/\/$/, '')); // Remove barra final
+  corsOrigins.push(frontendUrl + '/'); // Adiciona barra final
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || process.env.CLIENT_URL || ["http://localhost:5173", "http://192.168.1.100:5173"],
+    origin: corsOrigins,
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -27,8 +41,9 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware de segurança
 app.use(helmet());
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || process.env.CLIENT_URL || ["http://localhost:5173", "http://192.168.1.100:5173"],
+  origin: corsOrigins,
   credentials: true
 }));
 
