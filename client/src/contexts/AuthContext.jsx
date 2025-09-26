@@ -105,12 +105,17 @@ export function AuthProvider({ children }) {
     toast.success('Logout realizado com sucesso!')
   }
 
+  const updateAdmin = (adminData) => {
+    setAdmin(adminData)
+  }
+
   const value = {
     admin,
     loading,
     login,
     register,
-    logout
+    logout,
+    updateAdmin
   }
 
   return (

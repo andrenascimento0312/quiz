@@ -81,6 +81,13 @@ function ParticipantGame() {
 
     socket.on('final_results', (data) => {
       console.log('Resultados finais:', data)
+      
+      // Salvar ranking no localStorage para a página de resultados
+      if (data.ranking) {
+        localStorage.setItem(`ranking_${lobbyId}`, JSON.stringify(data.ranking))
+        console.log('💾 Ranking salvo no localStorage:', data.ranking)
+      }
+      
       navigate(`/results/${lobbyId}`)
     })
 

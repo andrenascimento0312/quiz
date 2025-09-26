@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 function AdminLogin() {
   const [isLogin, setIsLogin] = useState(true)
@@ -120,7 +120,16 @@ function AdminLogin() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-3">
+            {isLogin && (
+              <Link
+                to="/admin/forgot-password"
+                className="block text-sm text-primary-600 hover:text-primary-500 font-medium"
+              >
+                Esqueceu sua senha?
+              </Link>
+            )}
+            
             <button
               type="button"
               onClick={toggleMode}

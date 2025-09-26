@@ -1,0 +1,26 @@
+{
+  "name": "quiz-automated-tests",
+  "version": "1.0.0",
+  "description": "Testes automatizados para o sistema de Quiz em Tempo Real",
+  "main": "automated-quiz-test.js",
+  "scripts": {
+    "test": "node automated-quiz-test.js",
+    "test:full": "node automated-quiz-test.js",
+    "install-deps": "npm install puppeteer"
+  },
+  "keywords": [
+    "quiz",
+    "test",
+    "automation",
+    "puppeteer",
+    "e2e"
+  ],
+  "author": "Quiz System",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.5.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

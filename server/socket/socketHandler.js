@@ -11,10 +11,13 @@ function socketHandler(io) {
     // Evento: Admin se autentica
     socket.on('admin_auth', async (data) => {
       try {
+        console.log('📥 Dados recebidos para admin_auth:', data);
         const { token, lobbyId } = data;
+        console.log(`🔐 Admin tentando autenticar no lobby: ${lobbyId}`);
         const admin = await verifyToken(token);
         
         if (!admin) {
+          console.log('❌ Token inválido para admin');
           socket.emit('auth_error', { message: 'Token inválido' });
           return;
         }
@@ -25,9 +28,9 @@ function socketHandler(io) {
           'SELECT admin_id FROM lobbies WHERE lobby_id = ?',
           [lobbyId]
         );
-        db.close();
 
         if (!lobby || lobby.admin_id !== admin.id) {
+          db.close();
           socket.emit('auth_error', { message: 'Lobby não encontrado' });
           return;
         }
@@ -40,10 +43,28 @@ function socketHandler(io) {
 
         // Inicializar lobby em memória se não existir
         if (!lobbies.has(lobbyId)) {
+          // Carregar participantes existentes do banco
+          const existingParticipants = await allQuery(db, `
+            SELECT id, nickname, socket_id, score, joined_at
+            FROM participants 
+            WHERE lobby_id = ?
+          `, [lobbyId]);
+
+          const participantsMap = new Map();
+          existingParticipants.forEach(p => {
+            participantsMap.set(p.id, {
+              id: p.id,
+              nickname: p.nickname,
+              socketId: p.socket_id,
+              score: p.score,
+              joinedAt: new Date(p.joined_at)
+            });
+          });
+
           lobbies.set(lobbyId, {
             status: 'waiting',
             currentQuestion: 0,
-            participants: new Map(),
+            participants: participantsMap,
             adminSocket: socket.id,
             timer: null,
             quiz: null
@@ -52,10 +73,14 @@ function socketHandler(io) {
           lobbies.get(lobbyId).adminSocket = socket.id;
         }
 
+        db.close();
+
+        console.log(`✅ Admin ${admin.name} autenticado no lobby ${lobbyId}`);
         socket.emit('admin_authenticated', { admin, lobbyId });
         
         // Enviar estado atual do lobby
         await sendLobbyUpdate(lobbyId);
+        console.log(`📊 Estado do lobby enviado para admin`);
         
       } catch (error) {
         console.error('Erro na autenticação admin:', error);
@@ -147,6 +172,7 @@ function socketHandler(io) {
           joinedAt: new Date()
         });
 
+        console.log(`👤 Participante ${nickname} (ID: ${participantId}) entrou no lobby ${lobbyId}`);
         socket.emit('join_success', { participantId, nickname, lobbyId });
         
         // Notificar todos sobre atualização
@@ -162,33 +188,58 @@ function socketHandler(io) {
     socket.on('start_quiz', async (data) => {
       try {
         const { lobbyId } = data;
+        console.log(`🚀 Admin iniciando quiz no lobby: ${lobbyId}`);
         
         if (!socket.isAdmin || socket.lobbyId !== lobbyId) {
+          console.log('❌ Acesso negado para iniciar quiz');
           socket.emit('error', { message: 'Acesso negado' });
           return;
         }
 
         const lobbyData = lobbies.get(lobbyId);
         if (!lobbyData) {
+          console.log('❌ Lobby não encontrado em memória');
           socket.emit('error', { message: 'Lobby não encontrado' });
           return;
         }
 
-        // Verificar se tem pelo menos 5 participantes
-        if (lobbyData.participants.size < 5) {
-          socket.emit('error', { message: 'Mínimo de 5 participantes necessário' });
+        console.log(`👥 Participantes no lobby: ${lobbyData.participants.size}`);
+        
+        // Verificar se tem pelo menos 2 participantes
+        if (lobbyData.participants.size < 2) {
+          console.log('❌ Participantes insuficientes');
+          socket.emit('error', { message: 'Mínimo de 2 participantes necessário' });
           return;
         }
 
         // Carregar quiz do banco
         const db = createConnection();
         const lobby = await getQuery(db, 'SELECT quiz_id FROM lobbies WHERE lobby_id = ?', [lobbyId]);
+        
+        if (!lobby) {
+          console.log('❌ Lobby não encontrado no banco de dados');
+          db.close();
+          socket.emit('error', { message: 'Lobby não encontrado no banco' });
+          return;
+        }
+        
+        console.log(`📋 Carregando quiz ID: ${lobby.quiz_id}`);
+        
         const questions = await allQuery(db, `
           SELECT id, text, options, correct_option_id, time_limit_seconds, order_index
           FROM questions 
           WHERE quiz_id = ? 
           ORDER BY order_index
         `, [lobby.quiz_id]);
+
+        console.log(`❓ Quiz carregado com ${questions.length} pergunta(s)`);
+        
+        if (questions.length === 0) {
+          console.log('❌ Nenhuma pergunta encontrada para este quiz');
+          db.close();
+          socket.emit('error', { message: 'Quiz não possui perguntas' });
+          return;
+        }
 
         // Marcar lobby como iniciado
         await runQuery(db, 
@@ -206,7 +257,12 @@ function socketHandler(io) {
           options: JSON.parse(q.options)
         }));
 
-        // Iniciar primeira pergunta
+        console.log(`🎯 Iniciando quiz com ${questions.length} pergunta(s)`);
+        console.log(`🔢 currentQuestion inicializado como: ${lobbyData.currentQuestion}`);
+        console.log(`📋 Quiz carregado:`, lobbyData.quiz.map((q, i) => `${i}: ${q.text.substring(0, 50)}...`));
+        
+        // Iniciar primeira pergunta (SEMPRE índice 0)
+        console.log(`🎯 FORÇANDO início da pergunta 0 (primeira pergunta)`);
         await startQuestion(lobbyId, 0);
 
       } catch (error) {
@@ -265,6 +321,33 @@ function socketHandler(io) {
         db.close();
 
         socket.emit('answer_submitted', { correct, optionId });
+
+        // Verificar se todos os participantes responderam
+        const totalParticipants = lobbyData.participants.size;
+        const answersQuery = await allQuery(createConnection(), `
+          SELECT COUNT(DISTINCT participant_id) as answered_count 
+          FROM answers 
+          WHERE lobby_id = ? AND question_id = ?
+        `, [lobbyId, questionId]);
+        
+        const answeredCount = answersQuery[0]?.answered_count || 0;
+        
+        console.log(`📊 Respostas: ${answeredCount}/${totalParticipants} participantes`);
+        
+        if (answeredCount >= totalParticipants) {
+          console.log(`✅ Todos responderam! Finalizando pergunta antecipadamente`);
+          console.log(`🔢 Pergunta atual que está sendo finalizada: ${lobbyData.currentQuestion} (${lobbyData.currentQuestion + 1}/${lobbyData.quiz.length})`);
+          // Cancelar timer
+          if (lobbyData.timer) {
+            clearTimeout(lobbyData.timer);
+            lobbyData.timer = null;
+          }
+          // Aguardar 2 segundos antes de finalizar (para admin ver a pergunta)
+          setTimeout(() => {
+            console.log(`⚡ Finalizando pergunta antecipadamente (índice atual: ${lobbyData.currentQuestion})`);
+            endQuestion(lobbyId, lobbyData.currentQuestion);
+          }, 2000);
+        }
 
       } catch (error) {
         console.error('Erro ao submeter resposta:', error);
@@ -339,20 +422,33 @@ function socketHandler(io) {
 
   // Função para iniciar uma pergunta
   async function startQuestion(lobbyId, questionIndex) {
+    console.log(`🎯 [CHAMADA] startQuestion(${lobbyId}, ${questionIndex})`);
+    console.log(`🎯 Iniciando pergunta ${questionIndex + 1} no lobby ${lobbyId}`);
+    
     const lobbyData = lobbies.get(lobbyId);
-    if (!lobbyData || !lobbyData.quiz) return;
-
-    const question = lobbyData.quiz[questionIndex];
-    if (!question) {
-      // Quiz finalizado
-      await finishQuiz(lobbyId);
+    if (!lobbyData || !lobbyData.quiz) {
+      console.log('❌ Lobby ou quiz não encontrado na memória');
       return;
     }
+    
+    console.log(`🔢 Estado atual: lobbyData.currentQuestion = ${lobbyData.currentQuestion}`);
+
+    console.log(`🔍 Debug - Total perguntas: ${lobbyData.quiz.length}, Índice atual: ${questionIndex}`);
+    
+    const question = lobbyData.quiz[questionIndex];
+    if (!question) {
+      console.log(`❌ Erro: Pergunta não encontrada no índice ${questionIndex}`);
+      console.log(`📋 Perguntas disponíveis:`, lobbyData.quiz.map((q, i) => `${i}: ${q.text.substring(0, 30)}...`));
+      return;
+    }
+
+    console.log(`📝 Enviando pergunta ${questionIndex + 1}/${lobbyData.quiz.length}`);
+    console.log(`⏱️ Tempo limite: ${question.time_limit_seconds} segundos`);
 
     const startedAt = new Date().toISOString();
     
     // Enviar pergunta para todos (sem resposta correta)
-    io.to(lobbyId).emit('question_start', {
+    const questionData = {
       questionId: question.id,
       text: question.text,
       options: question.options,
@@ -360,18 +456,28 @@ function socketHandler(io) {
       startedAt,
       questionIndex: questionIndex + 1,
       totalQuestions: lobbyData.quiz.length
-    });
+    };
+    
+    console.log(`📤 Enviando question_start para lobby ${lobbyId} (pergunta ${questionIndex + 1})`);
+    
+    io.to(lobbyId).emit('question_start', questionData);
 
     // Timer para finalizar pergunta
     lobbyData.timer = setTimeout(() => {
+      console.log(`⏰ Tempo esgotado para pergunta ${questionIndex + 1}`);
       endQuestion(lobbyId, questionIndex);
     }, question.time_limit_seconds * 1000);
   }
 
   // Função para finalizar uma pergunta
   async function endQuestion(lobbyId, questionIndex) {
+    console.log(`🏁 [CHAMADA] endQuestion(${lobbyId}, ${questionIndex})`);
+    console.log(`🏁 Finalizando pergunta ${questionIndex + 1} no lobby ${lobbyId}`);
+    
     const lobbyData = lobbies.get(lobbyId);
     if (!lobbyData || !lobbyData.quiz) return;
+    
+    console.log(`🔢 Estado antes: lobbyData.currentQuestion = ${lobbyData.currentQuestion}`);
 
     const question = lobbyData.quiz[questionIndex];
     
@@ -399,15 +505,31 @@ function socketHandler(io) {
 
     // Avançar para próxima pergunta após 3 segundos
     setTimeout(() => {
-      lobbyData.currentQuestion++;
-      startQuestion(lobbyId, lobbyData.currentQuestion);
+      console.log(`🔢 Estado ANTES de avançar: currentQuestion = ${lobbyData.currentQuestion}`);
+      const nextQuestionIndex = lobbyData.currentQuestion + 1;
+      console.log(`➡️ Calculando próxima pergunta: ${nextQuestionIndex + 1} (índice: ${nextQuestionIndex})`);
+      console.log(`📊 Total de perguntas disponíveis: ${lobbyData.quiz.length}`);
+      
+      // Verificar se há próxima pergunta
+      if (nextQuestionIndex < lobbyData.quiz.length) {
+        console.log(`✅ Próxima pergunta existe, atualizando currentQuestion de ${lobbyData.currentQuestion} para ${nextQuestionIndex}`);
+        lobbyData.currentQuestion = nextQuestionIndex;
+        startQuestion(lobbyId, nextQuestionIndex);
+      } else {
+        console.log(`🏁 Todas as perguntas foram respondidas (tentou acessar índice ${nextQuestionIndex})`);
+        finishQuiz(lobbyId);
+      }
     }, 3000);
   }
 
   // Função para finalizar quiz
   async function finishQuiz(lobbyId) {
+    console.log(`🏁 Finalizando quiz no lobby ${lobbyId}`);
     const lobbyData = lobbies.get(lobbyId);
-    if (!lobbyData) return;
+    if (!lobbyData) {
+      console.log('❌ Lobby não encontrado ao finalizar quiz');
+      return;
+    }
 
     // Marcar como finalizado no banco
     const db = createConnection();
@@ -441,21 +563,32 @@ function socketHandler(io) {
   // Função para enviar atualização do lobby
   async function sendLobbyUpdate(lobbyId) {
     const lobbyData = lobbies.get(lobbyId);
-    if (!lobbyData) return;
+    if (!lobbyData) {
+      console.log(`⚠️ Lobby ${lobbyId} não encontrado em memória`);
+      return;
+    }
 
     const participants = Array.from(lobbyData.participants.values());
     const participantCount = participants.length;
+
+    console.log(`📡 Enviando atualização do lobby ${lobbyId}: ${participantCount} participantes`);
+    console.log(`📝 Participantes:`, participants.map(p => p.nickname));
 
     io.to(lobbyId).emit('lobby_update', {
       participants,
       count: participantCount
     });
 
-    // Verificar se pode iniciar (>= 5 participantes)
+    // Verificar se pode iniciar (>= 2 participantes)
+    const allowed = participantCount >= 2;
+    const needed = Math.max(0, 2 - participantCount);
+    
+    console.log(`🚦 Start allowed: ${allowed}, needed: ${needed}`);
+    
     io.to(lobbyId).emit('start_allowed', {
-      allowed: participantCount >= 5,
+      allowed,
       count: participantCount,
-      needed: Math.max(0, 5 - participantCount)
+      needed
     });
   }
 

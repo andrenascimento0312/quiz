@@ -70,6 +70,7 @@ export function SocketProvider({ children }) {
   // Função para autenticar admin
   const authenticateAdmin = (token, lobbyId) => {
     if (socket) {
+      console.log('📤 Enviando admin_auth:', { token: token ? 'presente' : 'ausente', lobbyId })
       socket.emit('admin_auth', { token, lobbyId })
     }
   }

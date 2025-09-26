@@ -30,17 +30,16 @@ function Results() {
       const response = await axios.get(`/lobby/${lobbyId}`)
       setLobby(response.data.lobby)
       
-      // Simular ranking final - em produção viria do WebSocket ou API
-      // Por enquanto, vamos usar dados mockados ou tentar buscar do localStorage
-      const mockRanking = [
-        { id: 1, nickname: 'João', score: 8, position: 1 },
-        { id: 2, nickname: 'Maria', score: 7, position: 2 },
-        { id: 3, nickname: 'Pedro', score: 6, position: 3 },
-        { id: 4, nickname: 'Ana', score: 5, position: 4 },
-        { id: 5, nickname: 'Carlos', score: 4, position: 5 }
-      ]
-      
-      setRanking(mockRanking)
+      // Tentar buscar ranking do localStorage (dados do quiz)
+      const storedRanking = localStorage.getItem(`ranking_${lobbyId}`)
+      if (storedRanking) {
+        const parsedRanking = JSON.parse(storedRanking)
+        console.log('📊 Ranking carregado do localStorage:', parsedRanking)
+        setRanking(parsedRanking)
+      } else {
+        console.log('⚠️ Nenhum ranking encontrado no localStorage')
+        setRanking([])
+      }
       
     } catch (error) {
       console.error('Erro ao carregar resultados:', error)

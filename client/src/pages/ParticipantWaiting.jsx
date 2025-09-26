@@ -7,12 +7,12 @@ import toast from 'react-hot-toast'
 function ParticipantWaiting() {
   const { lobbyId } = useParams()
   const navigate = useNavigate()
-  const { socket, connect } = useSocket()
+  const { socket, connect, joinLobby } = useSocket()
   
   const [lobby, setLobby] = useState(null)
   const [participants, setParticipants] = useState([])
   const [participantCount, setParticipantCount] = useState(0)
-  const [needed, setNeeded] = useState(5)
+  const [needed, setNeeded] = useState(2)
   const [participantData, setParticipantData] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -41,8 +41,10 @@ function ParticipantWaiting() {
       setupSocketListeners()
       connect()
       
-      // Reconectar ao lobby se necessário
-      // O socket handler vai reconhecer o participante pelo nickname
+      // Reconectar ao lobby - enviar join_lobby para garantir que está na memória do servidor
+      setTimeout(() => {
+        joinLobby(participantData.lobbyId, participantData.nickname)
+      }, 500)
     }
 
     return () => {
@@ -158,14 +160,14 @@ function ParticipantWaiting() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Progresso para iniciar</span>
                   <span className="font-medium">
-                    {Math.max(0, participantCount)}/5
+                    {Math.max(0, participantCount)}/2
                   </span>
                 </div>
                 
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div 
                     className="bg-primary-600 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, (participantCount / 5) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (participantCount / 2) * 100)}%` }}
                   ></div>
                 </div>
                 
@@ -249,7 +251,7 @@ function ParticipantWaiting() {
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900">Aguarde o início</h3>
-                  <p className="text-sm text-gray-600">O quiz começará automaticamente quando houver pelo menos 5 participantes.</p>
+                  <p className="text-sm text-gray-600">O quiz começará automaticamente quando houver pelo menos 2 participantes.</p>
                 </div>
               </div>
               

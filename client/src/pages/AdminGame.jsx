@@ -15,6 +15,7 @@ function AdminGame() {
   const [ranking, setRanking] = useState([])
   const [participants, setParticipants] = useState([])
   const [answeredCount, setAnsweredCount] = useState(0)
+  const [nextQuestionTimer, setNextQuestionTimer] = useState(null)
 
   useEffect(() => {
     if (socket) {
@@ -44,17 +45,30 @@ function AdminGame() {
     })
 
     socket.on('question_start', (data) => {
-      console.log('Nova pergunta iniciada:', data)
+      console.log('🎯 Nova pergunta iniciada no AdminGame:', data)
       setCurrentQuestion(data)
       setShowResults(false)
       setQuestionResult(null)
       setAnsweredCount(0)
+      setNextQuestionTimer(null) // Resetar timer
     })
 
     socket.on('question_end', (data) => {
       console.log('Pergunta finalizada:', data)
       setQuestionResult(data)
       setShowResults(true)
+      
+      // Iniciar timer de 3 segundos para próxima pergunta
+      setNextQuestionTimer(3)
+      const interval = setInterval(() => {
+        setNextQuestionTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(interval)
+            return null
+          }
+          return prev - 1
+        })
+      }, 1000)
     })
 
     socket.on('score_update', (data) => {
@@ -64,6 +78,13 @@ function AdminGame() {
 
     socket.on('final_results', (data) => {
       console.log('Resultados finais:', data)
+      
+      // Salvar ranking no localStorage para a página de resultados
+      if (data.ranking) {
+        localStorage.setItem(`ranking_${lobbyId}`, JSON.stringify(data.ranking))
+        console.log('💾 Admin - Ranking salvo no localStorage:', data.ranking)
+      }
+      
       navigate(`/results/${lobbyId}`)
     })
 
@@ -80,8 +101,9 @@ function AdminGame() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto mb-6"></div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Inicializando quiz...</h2>
-          <p className="text-gray-600">Preparando primeira pergunta</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Aguardando pergunta...</h2>
+          <p className="text-gray-600">Conectando ao quiz em andamento</p>
+          <p className="text-sm text-gray-500 mt-2">Lobby: {lobbyId}</p>
         </div>
       </div>
     )
@@ -263,6 +285,23 @@ function AdminGame() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Timer para próxima pergunta */}
+        {nextQuestionTimer && (
+          <div className="mt-6 card bg-blue-50 border-blue-200">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-full text-2xl font-bold mb-4">
+                {nextQuestionTimer}
+              </div>
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                Próxima pergunta em {nextQuestionTimer} segundo{nextQuestionTimer !== 1 ? 's' : ''}
+              </h3>
+              <p className="text-blue-700">
+                Aguarde enquanto preparamos a próxima pergunta...
+              </p>
             </div>
           </div>
         )}

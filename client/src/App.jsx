@@ -4,7 +4,12 @@ import { useAuth } from './contexts/AuthContext'
 // Pages
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
+import SuperAdminDashboard from './pages/SuperAdminDashboard'
+import Profile from './pages/Profile'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import QuizBuilder from './pages/QuizBuilder'
+import QuizEditor from './pages/QuizEditor'
 import AdminLobby from './pages/AdminLobby'
 import JoinLobby from './pages/JoinLobby'
 import ParticipantWaiting from './pages/ParticipantWaiting'
@@ -39,14 +44,34 @@ function App() {
         admin ? <Navigate to="/admin/dashboard" replace /> : <AdminLogin />
       } />
       
+      <Route path="/admin/forgot-password" element={
+        admin ? <Navigate to="/admin/dashboard" replace /> : <ForgotPassword />
+      } />
+      
+      <Route path="/admin/reset-password" element={
+        admin ? <Navigate to="/admin/dashboard" replace /> : <ResetPassword />
+      } />
+      
       <Route path="/admin/*" element={
         admin ? (
           <Layout>
             <Routes>
-              <Route path="/dashboard" element={<AdminDashboard />} />
-              <Route path="/quiz/new" element={<QuizBuilder />} />
-              <Route path="/quiz/:quizId/lobby" element={<AdminLobby />} />
-              <Route path="/game/:lobbyId/admin" element={<AdminGame />} />
+              <Route path="/dashboard" element={
+                admin.role === 'superadmin' ? <SuperAdminDashboard /> : <AdminDashboard />
+              } />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/quiz/new" element={
+                admin.role === 'admin' ? <QuizBuilder /> : <Navigate to="/admin/dashboard" replace />
+              } />
+              <Route path="/quiz/:quizId/edit" element={
+                admin.role === 'admin' ? <QuizEditor /> : <Navigate to="/admin/dashboard" replace />
+              } />
+              <Route path="/quiz/:quizId/lobby" element={
+                admin.role === 'admin' ? <AdminLobby /> : <Navigate to="/admin/dashboard" replace />
+              } />
+              <Route path="/game/:lobbyId/admin" element={
+                admin.role === 'admin' ? <AdminGame /> : <Navigate to="/admin/dashboard" replace />
+              } />
               <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
             </Routes>
           </Layout>

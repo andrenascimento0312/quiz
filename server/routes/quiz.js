@@ -8,6 +8,9 @@ const router = express.Router();
 
 // Schemas de validação
 const questionSchema = Joi.object({
+  id: Joi.alternatives().try(Joi.number(), Joi.string()).optional(), // Permite ID temporal do frontend
+  dbId: Joi.alternatives().try(Joi.number(), Joi.string()).optional(), // Permite ID do banco para edição
+  tempId: Joi.alternatives().try(Joi.number(), Joi.string()).optional(), // Permite ID temporal
   text: Joi.string().min(5).max(500).required(),
   options: Joi.array().items(
     Joi.object({
@@ -57,8 +60,16 @@ router.get('/admin/quizzes', authenticateToken, async (req, res) => {
   }
 });
 
+// Middleware para verificar se é admin (não superadmin)
+const requireAdmin = async (req, res, next) => {
+  if (req.admin.role !== 'admin') {
+    return res.status(403).json({ error: 'Apenas administradores podem criar quizzes' });
+  }
+  next();
+};
+
 // POST /api/quiz/admin/quizzes - Criar novo quiz
-router.post('/admin/quizzes', authenticateToken, async (req, res) => {
+router.post('/admin/quizzes', authenticateToken, requireAdmin, async (req, res) => {
   try {
     // Validar dados
     const { error, value } = quizSchema.validate(req.body);
@@ -223,6 +234,160 @@ router.post('/:quizId/publish', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao publicar quiz:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/quiz/admin/quizzes/:quizId - Buscar quiz para edição
+router.get('/admin/quizzes/:quizId', authenticateToken, async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const db = createConnection();
+
+    // Verificar se o quiz pertence ao admin
+    const quiz = await getQuery(db, 
+      'SELECT id, title, description FROM quizzes WHERE id = ? AND admin_id = ?',
+      [quizId, req.admin.id]
+    );
+
+    if (!quiz) {
+      db.close();
+      return res.status(404).json({ error: 'Quiz não encontrado' });
+    }
+
+    // Buscar perguntas
+    const questions = await allQuery(db, `
+      SELECT id, text, options, correct_option_id, time_limit_seconds, order_index
+      FROM questions 
+      WHERE quiz_id = ? 
+      ORDER BY order_index
+    `, [quizId]);
+
+    // Parse das opções JSON e adicionar ID temporal para o frontend
+    const parsedQuestions = questions.map((q, index) => ({
+      id: q.id, // ID real do banco
+      tempId: Date.now() + index, // ID temporal para o frontend
+      text: q.text,
+      options: JSON.parse(q.options),
+      correctOptionId: q.correct_option_id,
+      timeLimitSeconds: q.time_limit_seconds
+    }));
+
+    db.close();
+
+    res.json({
+      quiz: {
+        ...quiz,
+        questions: parsedQuestions
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar quiz:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// PUT /api/quiz/admin/quizzes/:quizId - Atualizar quiz
+router.put('/admin/quizzes/:quizId', authenticateToken, async (req, res) => {
+  try {
+    // Validar dados
+    const { error, value } = quizSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { quizId } = req.params;
+    const { title, description, questions } = value;
+    const db = createConnection();
+
+    // Verificar se o quiz pertence ao admin
+    const quiz = await getQuery(db, 
+      'SELECT id FROM quizzes WHERE id = ? AND admin_id = ?',
+      [quizId, req.admin.id]
+    );
+
+    if (!quiz) {
+      db.close();
+      return res.status(404).json({ error: 'Quiz não encontrado' });
+    }
+
+    // Atualizar quiz
+    await runQuery(db, 
+      'UPDATE quizzes SET title = ?, description = ? WHERE id = ?',
+      [title, description || '', quizId]
+    );
+
+    // Remover perguntas antigas
+    await runQuery(db, 'DELETE FROM questions WHERE quiz_id = ?', [quizId]);
+
+    // Criar novas perguntas
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      await runQuery(db, `
+        INSERT INTO questions (quiz_id, text, options, correct_option_id, time_limit_seconds, order_index)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [
+        quizId,
+        question.text,
+        JSON.stringify(question.options),
+        question.correctOptionId,
+        question.timeLimitSeconds,
+        i
+      ]);
+    }
+
+    db.close();
+
+    res.json({
+      message: 'Quiz atualizado com sucesso',
+      quiz: { id: quizId, title, description, questionCount: questions.length }
+    });
+
+  } catch (error) {
+    console.error('Erro ao atualizar quiz:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// DELETE /api/quiz/admin/quizzes/:quizId - Excluir quiz
+router.delete('/admin/quizzes/:quizId', authenticateToken, async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const db = createConnection();
+
+    // Verificar se o quiz pertence ao admin
+    const quiz = await getQuery(db, 
+      'SELECT id FROM quizzes WHERE id = ? AND admin_id = ?',
+      [quizId, req.admin.id]
+    );
+
+    if (!quiz) {
+      db.close();
+      return res.status(404).json({ error: 'Quiz não encontrado' });
+    }
+
+    // Excluir respostas relacionadas
+    await runQuery(db, 'DELETE FROM answers WHERE question_id IN (SELECT id FROM questions WHERE quiz_id = ?)', [quizId]);
+    
+    // Excluir participantes de lobbies relacionados
+    await runQuery(db, 'DELETE FROM participants WHERE lobby_id IN (SELECT lobby_id FROM lobbies WHERE quiz_id = ?)', [quizId]);
+    
+    // Excluir lobbies relacionados
+    await runQuery(db, 'DELETE FROM lobbies WHERE quiz_id = ?', [quizId]);
+    
+    // Excluir perguntas relacionadas
+    await runQuery(db, 'DELETE FROM questions WHERE quiz_id = ?', [quizId]);
+    
+    // Excluir o quiz
+    await runQuery(db, 'DELETE FROM quizzes WHERE id = ?', [quizId]);
+
+    db.close();
+
+    res.json({ message: 'Quiz excluído com sucesso' });
+
+  } catch (error) {
+    console.error('Erro ao excluir quiz:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

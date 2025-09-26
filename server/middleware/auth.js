@@ -18,13 +18,18 @@ async function authenticateToken(req, res, next) {
     // Verificar se o admin ainda existe no banco
     const db = createConnection();
     const admin = await getQuery(db, 
-      'SELECT id, name, email FROM admins WHERE id = ?', 
+      'SELECT id, name, email, role, status, phone, avatar FROM admins WHERE id = ?', 
       [decoded.adminId]
     );
     db.close();
 
     if (!admin) {
       return res.status(401).json({ error: 'Admin não encontrado' });
+    }
+
+    // Verificar se conta ainda está ativa
+    if (admin.status !== 'approved') {
+      return res.status(401).json({ error: 'Conta não aprovada ou restrita' });
     }
 
     req.admin = admin;
@@ -51,7 +56,7 @@ async function verifyToken(token) {
     
     const db = createConnection();
     const admin = await getQuery(db, 
-      'SELECT id, name, email FROM admins WHERE id = ?', 
+      'SELECT id, name, email, role, status, phone, avatar FROM admins WHERE id = ? AND status = "approved"', 
       [decoded.adminId]
     );
     db.close();

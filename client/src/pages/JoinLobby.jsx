@@ -182,7 +182,7 @@ function JoinLobby() {
             <h3 className="font-medium text-blue-900 mb-2">ℹ️ Como funciona</h3>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• Aguarde outros participantes entrarem</li>
-              <li>• O quiz começará quando houver pelo menos 5 pessoas</li>
+              <li>• O quiz começará quando houver pelo menos 2 pessoas</li>
               <li>• Responda as perguntas o mais rápido possível</li>
               <li>• Veja o ranking em tempo real</li>
             </ul>

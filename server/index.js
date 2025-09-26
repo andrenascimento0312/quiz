@@ -9,6 +9,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth');
 const quizRoutes = require('./routes/quiz');
 const lobbyRoutes = require('./routes/lobby');
+const superadminRoutes = require('./routes/superadmin');
 const socketHandler = require('./socket/socketHandler');
 const { initDatabase } = require('./database/init');
 
@@ -16,7 +17,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: process.env.CLIENT_URL || ["http://localhost:5173", "http://192.168.1.100:5173"],
     methods: ["GET", "POST"]
   }
 });
@@ -26,7 +27,7 @@ const PORT = process.env.PORT || 3001;
 // Middleware de segurança
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin: process.env.CLIENT_URL || ["http://localhost:5173", "http://192.168.1.100:5173"],
   credentials: true
 }));
 
@@ -45,6 +46,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/admin', authRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/lobby', lobbyRoutes);
+app.use('/api/superadmin', superadminRoutes);
 
 // Servir arquivos estáticos em produção
 if (process.env.NODE_ENV === 'production') {

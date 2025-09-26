@@ -16,7 +16,7 @@ function AdminLobby() {
   const [loading, setLoading] = useState(true)
   const [startAllowed, setStartAllowed] = useState(false)
   const [participantCount, setParticipantCount] = useState(0)
-  const [needed, setNeeded] = useState(5)
+  const [needed, setNeeded] = useState(2)
   const [showQRModal, setShowQRModal] = useState(false)
   const [joinLink, setJoinLink] = useState('')
 
@@ -31,6 +31,7 @@ function AdminLobby() {
       // Conectar e autenticar
       connect()
       const token = localStorage.getItem('adminToken')
+      console.log('🔐 Tentando autenticar admin no lobby:', lobby.lobbyId)
       authenticateAdmin(token, lobby.lobbyId)
     }
 
@@ -53,12 +54,22 @@ function AdminLobby() {
       setJoinLink(link)
       
       // Buscar dados do lobby e quiz
+      console.log(`📡 Buscando dados do lobby: ${lobbyId}`);
       const [lobbyResponse, quizResponse] = await Promise.all([
         axios.get(`/lobby/${lobbyId}`),
         axios.get(`/lobby/${lobbyId}/quiz`)
       ])
+      
+      console.log('📊 Lobby Response:', lobbyResponse.data);
+      console.log('📋 Quiz Response:', quizResponse.data);
 
-      setLobby(lobbyResponse.data.lobby)
+      const lobbyData = lobbyResponse.data.lobby;
+      // Normalizar o nome do campo lobbyId
+      if (lobbyData.lobby_id && !lobbyData.lobbyId) {
+        lobbyData.lobbyId = lobbyData.lobby_id;
+      }
+      
+      setLobby(lobbyData)
       setQuiz(quizResponse.data.quiz)
       
     } catch (error) {
@@ -72,20 +83,23 @@ function AdminLobby() {
 
   const setupSocketListeners = () => {
     socket.on('admin_authenticated', (data) => {
-      console.log('Admin autenticado:', data)
+      console.log('🔐 Admin autenticado:', data)
     })
 
     socket.on('lobby_update', (data) => {
+      console.log('📊 Atualização do lobby recebida:', data)
       setParticipants(data.participants || [])
       setParticipantCount(data.count || 0)
     })
 
     socket.on('start_allowed', (data) => {
+      console.log('🚦 Start allowed recebido:', data)
       setStartAllowed(data.allowed)
       setNeeded(data.needed || 0)
     })
 
-    socket.on('question_start', () => {
+    socket.on('question_start', (data) => {
+      console.log('🎯 Pergunta iniciada, redirecionando para AdminGame:', data)
       // Quiz iniciado, redirecionar para tela de admin do jogo
       navigate(`/admin/game/${lobby.lobbyId}/admin`)
     })
@@ -93,7 +107,7 @@ function AdminLobby() {
 
   const handleStartQuiz = () => {
     if (!startAllowed) {
-      toast.error(`Necessário pelo menos 5 participantes (faltam ${needed})`)
+      toast.error(`Necessário pelo menos 2 participantes (faltam ${needed})`)
       return
     }
     
@@ -196,7 +210,7 @@ function AdminLobby() {
               <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-700">
                   💡 Compartilhe o link ou QR Code para que os participantes entrem no lobby.
-                  Mínimo de 5 participantes necessário.
+                  Mínimo de 2 participantes necessário.
                 </p>
               </div>
             )}
