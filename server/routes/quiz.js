@@ -60,9 +60,9 @@ router.get('/admin/quizzes', authenticateToken, async (req, res) => {
   }
 });
 
-// Middleware para verificar se é admin (não superadmin)
+// Middleware para verificar se é admin ou superadmin
 const requireAdmin = async (req, res, next) => {
-  if (req.admin.role !== 'admin') {
+  if (!['admin', 'superadmin'].includes(req.admin.role)) {
     return res.status(403).json({ error: 'Apenas administradores podem criar quizzes' });
   }
   next();
