@@ -2,6 +2,7 @@ const { initDatabase } = require('../database/init');
 const { migrateUsers } = require('./migrate-users');
 const bcrypt = require('bcrypt');
 const { createConnection, runQuery } = require('../database/init');
+const { getConfig } = require('../config/defaults');
 
 async function initProduction() {
   console.log('🚀 Inicializando aplicação para produção...');
@@ -19,6 +20,7 @@ async function initProduction() {
     
     // 3. Criar admin padrão se não existir
     console.log('🔄 Verificando admin padrão...');
+    const config = getConfig();
     const db = createConnection();
     
     try {
@@ -26,20 +28,20 @@ async function initProduction() {
       
       if (adminCount.count === 0) {
         console.log('🔄 Criando admin padrão...');
-        const passwordHash = await bcrypt.hash(process.env.DEFAULT_ADMIN_PASSWORD || 'admin123', 12);
+        const passwordHash = await bcrypt.hash(config.admin.password, 12);
         
         await runQuery(db, `
           INSERT INTO admins (name, email, password_hash, role, status, approved_at) 
           VALUES (?, ?, ?, 'superadmin', 'approved', CURRENT_TIMESTAMP)
         `, [
-          process.env.DEFAULT_ADMIN_NAME || 'Administrador',
-          process.env.DEFAULT_ADMIN_EMAIL || 'admin@quiz.com',
+          config.admin.name,
+          config.admin.email,
           passwordHash
         ]);
         
         console.log('✅ Admin padrão criado:', {
-          email: process.env.DEFAULT_ADMIN_EMAIL || 'admin@quiz.com',
-          password: '****** (definida nas env vars)'
+          email: config.admin.email,
+          password: '****** (configurado com segurança)'
         });
       } else {
         console.log('ℹ️ Admin já existe, pulando criação');
