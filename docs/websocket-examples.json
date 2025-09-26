@@ -1,0 +1,196 @@
+{
+  "websocket_events": {
+    "description": "Exemplos de payloads dos eventos WebSocket do sistema de quiz",
+    
+    "client_to_server": {
+      "join_lobby": {
+        "description": "Participante entra no lobby",
+        "payload": {
+          "lobbyId": "ABC12345",
+          "nickname": "João"
+        }
+      },
+      
+      "admin_auth": {
+        "description": "Admin se autentica no lobby",
+        "payload": {
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "lobbyId": "ABC12345"
+        }
+      },
+      
+      "start_quiz": {
+        "description": "Admin inicia o quiz",
+        "payload": {
+          "lobbyId": "ABC12345"
+        }
+      },
+      
+      "submit_answer": {
+        "description": "Participante submete resposta",
+        "payload": {
+          "lobbyId": "ABC12345",
+          "questionId": 1,
+          "optionId": "B"
+        }
+      },
+      
+      "kick_participant": {
+        "description": "Admin remove participante",
+        "payload": {
+          "lobbyId": "ABC12345",
+          "participantId": 5
+        }
+      }
+    },
+    
+    "server_to_client": {
+      "lobby_update": {
+        "description": "Atualização da lista de participantes",
+        "payload": {
+          "participants": [
+            {
+              "id": 1,
+              "nickname": "João",
+              "socketId": "socket123",
+              "score": 0,
+              "joinedAt": "2024-01-15T10:30:00Z"
+            },
+            {
+              "id": 2,
+              "nickname": "Maria",
+              "socketId": "socket456",
+              "score": 0,
+              "joinedAt": "2024-01-15T10:31:00Z"
+            }
+          ],
+          "count": 2
+        }
+      },
+      
+      "start_allowed": {
+        "description": "Indica se pode iniciar o quiz",
+        "payload": {
+          "allowed": true,
+          "count": 5,
+          "needed": 0
+        }
+      },
+      
+      "question_start": {
+        "description": "Nova pergunta iniciada",
+        "payload": {
+          "questionId": 1,
+          "text": "Qual é a capital do Brasil?",
+          "options": [
+            { "id": "A", "text": "São Paulo" },
+            { "id": "B", "text": "Brasília" },
+            { "id": "C", "text": "Rio de Janeiro" },
+            { "id": "D", "text": "Salvador" }
+          ],
+          "timeLimitSeconds": 30,
+          "startedAt": "2024-01-15T10:35:00Z",
+          "questionIndex": 1,
+          "totalQuestions": 5
+        }
+      },
+      
+      "question_end": {
+        "description": "Pergunta finalizada com resultados",
+        "payload": {
+          "questionId": 1,
+          "correctOptionId": "B",
+          "correctParticipants": [
+            { "id": 2, "nickname": "Ana" },
+            { "id": 1, "nickname": "João" },
+            { "id": 4, "nickname": "Pedro" }
+          ]
+        }
+      },
+      
+      "score_update": {
+        "description": "Ranking atualizado",
+        "payload": {
+          "ranking": [
+            { "id": 1, "nickname": "João", "score": 3 },
+            { "id": 2, "nickname": "Maria", "score": 2 },
+            { "id": 3, "nickname": "Pedro", "score": 2 },
+            { "id": 4, "nickname": "Ana", "score": 1 }
+          ]
+        }
+      },
+      
+      "final_results": {
+        "description": "Resultados finais do quiz",
+        "payload": {
+          "ranking": [
+            { "id": 1, "nickname": "João", "score": 5, "position": 1 },
+            { "id": 2, "nickname": "Maria", "score": 4, "position": 2 },
+            { "id": 3, "nickname": "Pedro", "score": 3, "position": 3 },
+            { "id": 4, "nickname": "Ana", "score": 2, "position": 4 },
+            { "id": 5, "nickname": "Carlos", "score": 1, "position": 5 }
+          ]
+        }
+      },
+      
+      "join_success": {
+        "description": "Confirmação de entrada no lobby",
+        "payload": {
+          "participantId": 1,
+          "nickname": "João",
+          "lobbyId": "ABC12345"
+        }
+      },
+      
+      "answer_submitted": {
+        "description": "Confirmação de resposta enviada",
+        "payload": {
+          "correct": true,
+          "optionId": "B"
+        }
+      },
+      
+      "admin_authenticated": {
+        "description": "Admin autenticado com sucesso",
+        "payload": {
+          "admin": {
+            "id": 1,
+            "name": "Admin",
+            "email": "admin@teste.com"
+          },
+          "lobbyId": "ABC12345"
+        }
+      }
+    },
+    
+    "error_events": {
+      "join_error": {
+        "description": "Erro ao entrar no lobby",
+        "payload": {
+          "message": "Nickname já em uso"
+        }
+      },
+      
+      "auth_error": {
+        "description": "Erro de autenticação",
+        "payload": {
+          "message": "Token inválido"
+        }
+      },
+      
+      "error": {
+        "description": "Erro geral",
+        "payload": {
+          "message": "Erro interno do servidor"
+        }
+      },
+      
+      "kicked": {
+        "description": "Participante foi removido",
+        "payload": {
+          "message": "Você foi removido do lobby pelo administrador"
+        }
+      }
+    }
+  }
+}

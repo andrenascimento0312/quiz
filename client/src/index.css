@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+  }
+  
+  .btn-success {
+    @apply btn bg-success-600 text-white hover:bg-success-700 focus:ring-success-500;
+  }
+  
+  .btn-danger {
+    @apply btn bg-danger-600 text-white hover:bg-danger-700 focus:ring-danger-500;
+  }
+  
+  .btn-disabled {
+    @apply btn bg-gray-300 text-gray-500 cursor-not-allowed;
+  }
+  
+  .input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+  }
+  
+  .timer-circle {
+    @apply w-20 h-20 rounded-full border-4 border-gray-200 flex items-center justify-center text-2xl font-bold;
+  }
+  
+  .timer-warning {
+    @apply border-yellow-400 text-yellow-600 animate-pulse-fast;
+  }
+  
+  .timer-danger {
+    @apply border-red-400 text-red-600 animate-bounce-slow;
+  }
+  
+  .option-button {
+    @apply w-full p-4 text-left rounded-lg border-2 border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500;
+  }
+  
+  .option-selected {
+    @apply border-primary-500 bg-primary-100;
+  }
+  
+  .option-correct {
+    @apply border-success-500 bg-success-100;
+  }
+  
+  .option-incorrect {
+    @apply border-danger-500 bg-danger-100;
+  }
+}
