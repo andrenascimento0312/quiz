@@ -371,5 +371,27 @@ Participant (Nível 1)
 
 ---
 
-**Última atualização**: Setembro 2025
-**Versão**: 1.2.0
+## 🌐 Deploy em Produção
+
+### URLs de Produção
+- **Sistema Online**: https://quiz-ten-beta-25.vercel.app/
+- **Backend API**: https://quiz-production-8b29.up.railway.app
+- **Admin Dashboard**: https://quiz-ten-beta-25.vercel.app/admin/login
+
+### Arquitetura de Deploy
+- **Frontend**: Vercel (React + Vite)
+- **Backend**: Railway (Node.js + Socket.IO)
+- **WebSocket**: Funcional em produção
+- **Banco de Dados**: SQLite (Railway managed)
+- **Autenticação**: JWT + bcrypt
+- **CORS**: Configurado para produção
+
+### Credenciais de Teste
+- **Admin**: Configurado via variáveis de ambiente
+- **Participantes**: Acesso livre via código do lobby
+
+---
+
+**Última atualização**: Setembro 2025  
+**Versão**: 1.3.0 - Deploy em Produção  
+**Status**: ✅ Sistema Online e Funcional

@@ -352,3 +352,41 @@ VITE_SOCKET_URL=http://localhost:3001
 - ⚡ WebSocket em tempo real
 - 🔐 Sistema de autenticação
 - 📊 Dashboard administrativo
+
+### v1.3.0 (Setembro 2025) - Deploy em Produção
+- 🌐 **Deploy completo**: Vercel + Railway
+- ⚡ **WebSocket em produção**: Funcional com CORS
+- 🔧 **Configuração otimizada**: Environment variables
+- 🚀 **Auto-deploy**: Push automático para produção
+- 📊 **Monitoramento**: Logs estruturados
+- 🔐 **Segurança**: HTTPS + JWT em produção
+
+## 🌐 Informações de Produção
+
+### URLs Ativas
+- **Aplicação**: https://quiz-ten-beta-25.vercel.app/
+- **API Backend**: https://quiz-production-8b29.up.railway.app
+- **Painel Admin**: https://quiz-ten-beta-25.vercel.app/admin/login
+
+### Arquitetura de Deploy
+```
+Frontend (Vercel) ←→ Backend (Railway)
+     ↓                     ↓
+   React SPA          Node.js + Socket.IO
+   Vite Build           SQLite Database
+   CDN Global          Auto-scaling
+```
+
+### Status do Sistema
+- ✅ **Frontend**: Online (Vercel CDN)
+- ✅ **Backend**: Online (Railway)
+- ✅ **WebSocket**: Funcional
+- ✅ **Database**: Ativo (SQLite)
+- ✅ **Authentication**: JWT funcionando
+- ✅ **CORS**: Configurado corretamente
+
+---
+
+**Última atualização**: Setembro 2025  
+**Versão**: 1.3.0 - Sistema em Produção  
+**Status**: ✅ Online e Operacional

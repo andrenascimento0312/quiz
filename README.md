@@ -2,32 +2,43 @@
 
 Sistema completo de quiz interativo em tempo real com múltiplos participantes, construído com React, Node.js, Express, Socket.IO e SQLite.
 
-## ✨ Funcionalidades
+🌐 **Demo Online**: https://quiz-ten-beta-25.vercel.app/  
+🔗 **Backend**: https://quiz-production-8b29.up.railway.app  
+📖 **Documentação Completa**: [AGENTS.md](./AGENTS.md) | [guidelines.md](./guidelines.md) | [DEPLOY.md](./DEPLOY.md)
+
+## ✨ Funcionalidades Principais
 
 ### 👨‍💼 Para Administradores
-- ✅ Registro e login com JWT
-- ✅ Dashboard com lista de quizzes
-- ✅ Criador de quiz (até 20 perguntas, 4 opções cada)
-- ✅ Configuração de tempo por pergunta (15, 30, 45, 60s)
-- ✅ Geração de link público e QR Code
-- ✅ Gerenciamento de lobby em tempo real
-- ✅ Remoção de participantes (kick)
-- ✅ Controle de início (mínimo 5 participantes)
-- ✅ Acompanhamento do quiz em tempo real
+- ✅ **Sistema de autenticação** completo com JWT
+- ✅ **Dashboard** com gestão de quizzes
+- ✅ **Editor de quiz avançado** (até 20 perguntas, 4 opções cada)
+- ✅ **Configuração flexível** de tempo por pergunta (15-60s)
+- ✅ **Geração automática** de links e QR Codes
+- ✅ **Lobby em tempo real** com WebSocket
+- ✅ **Controle total** do quiz (iniciar, pausar, finalizar)
+- ✅ **Moderação** (remover participantes)
+- ✅ **Mínimo otimizado** de 2 participantes (não 5)
+- ✅ **Acompanhamento em tempo real** do progresso
 
 ### 👥 Para Participantes
-- ✅ Entrada via link/QR Code com nickname único
-- ✅ Lobby de espera com lista de participantes
-- ✅ Interface de quiz responsiva e intuitiva
-- ✅ Timer sincronizado com servidor
-- ✅ Feedback instantâneo de respostas
-- ✅ Ranking em tempo real após cada pergunta
-- ✅ Resultados finais com pódio
+- ✅ **Entrada simples** via código/link/QR Code
+- ✅ **Lobby interativo** com lista de participantes
+- ✅ **Interface responsiva** e intuitiva
+- ✅ **Timer sincronizado** e justo para todos
+- ✅ **Feedback instantâneo** (correto/incorreto)
+- ✅ **Ranking dinâmico** após cada pergunta
+- ✅ **Resultados finais** com pódio personalizado
+- ✅ **Reconexão automática** em caso de desconexão
 
-### 🚀 Recursos Técnicos
-- ✅ WebSocket em tempo real (Socket.IO)
-- ✅ Servidor autoritativo para timing
-- ✅ Reconexão automática de participantes
+### 🚀 Recursos Técnicos Avançados
+- ✅ **WebSocket em tempo real** (Socket.IO) com reconexão
+- ✅ **Timer sincronizado** - só inicia quando todos carregaram
+- ✅ **Finalização inteligente** - avança quando todos respondem
+- ✅ **Tela intermediária** mostrando quem acertou + timer 3s
+- ✅ **Servidor autoritativo** para timing e validação
+- ✅ **Logs seguros** sem vazar perguntas/respostas
+- ✅ **Sistema de confirmação** de recebimento
+- ✅ **Deploy em produção** (Vercel + Railway)
 - ✅ Ranking com ordenação alfabética para empates
 - ✅ Interface responsiva (mobile-first)
 - ✅ Autenticação JWT segura
@@ -262,20 +273,39 @@ final_results { ranking: [...] }
 - CORS configurado
 - Validação de dados com Joi
 
-## 🚀 Deploy
+## 🚀 Deploy em Produção
 
-### Variáveis de Ambiente (Produção)
+### 🌐 URLs de Produção
+- **Frontend**: https://quiz-ten-beta-25.vercel.app/
+- **Backend**: https://quiz-production-8b29.up.railway.app
+- **Admin**: https://quiz-ten-beta-25.vercel.app/admin/login
+
+### 📦 Arquitetura de Deploy
+- **Frontend** → **Vercel** (CDN global, deploy automático)
+- **Backend** → **Railway** (auto-scaling, WebSocket support)
+- **Banco** → **SQLite** (Railway managed storage)
+
+### 🔧 Configuração de Produção
+
+#### Vercel (Frontend)
+```bash
+VITE_API_URL=https://quiz-production-8b29.up.railway.app
+VITE_SOCKET_URL=https://quiz-production-8b29.up.railway.app
+```
+
+#### Railway (Backend)
 ```bash
 NODE_ENV=production
 PORT=3001
-JWT_SECRET=sua-chave-jwt-super-secreta
-CLIENT_URL=https://seudominio.com
+JWT_SECRET=sua-chave-jwt-super-secreta-aqui
+FRONTEND_URL=https://quiz-ten-beta-25.vercel.app
+DEFAULT_ADMIN_EMAIL=admin@seudominio.com
+DEFAULT_ADMIN_PASSWORD=senha-super-secreta
+DEFAULT_ADMIN_NAME=Administrador
 ```
 
-### Considerações para Produção
-- Use PostgreSQL em vez de SQLite
-- Configure HTTPS
-- Use Redis para sessões Socket.IO (clustering)
+### 📋 Guia Completo
+Veja o guia detalhado de deploy em [DEPLOY.md](./DEPLOY.md)
 - Configure logs estruturados
 - Use PM2 ou Docker para deploy
 - Configure backup automático do banco
