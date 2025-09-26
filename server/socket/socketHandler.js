@@ -82,6 +82,30 @@ function socketHandler(io) {
         await sendLobbyUpdate(lobbyId);
         console.log(`📊 Estado do lobby enviado para admin`);
         
+        // Se o quiz estiver em andamento, reenviar a pergunta atual
+        const lobbyData = lobbies.get(lobbyId);
+        if (lobbyData && lobbyData.status === 'running' && lobbyData.quiz) {
+          const currentQuestionIndex = lobbyData.currentQuestion;
+          const currentQuestion = lobbyData.quiz[currentQuestionIndex];
+          
+          if (currentQuestion) {
+            console.log(`🔄 Quiz em andamento! Reenviando pergunta atual ${currentQuestionIndex + 1} para admin`);
+            
+            const questionData = {
+              questionId: currentQuestion.id,
+              text: currentQuestion.text,
+              options: currentQuestion.options,
+              timeLimitSeconds: currentQuestion.time_limit_seconds,
+              startedAt: new Date().toISOString(), // Timestamp atual
+              questionIndex: currentQuestionIndex + 1,
+              totalQuestions: lobbyData.quiz.length
+            };
+            
+            socket.emit('question_start', questionData);
+            console.log(`📤 Pergunta atual reenviada para admin: ${currentQuestion.text.substring(0, 50)}...`);
+          }
+        }
+        
       } catch (error) {
         console.error('Erro na autenticação admin:', error);
         socket.emit('auth_error', { message: 'Erro interno' });
@@ -263,7 +287,8 @@ function socketHandler(io) {
         
         // Iniciar primeira pergunta (SEMPRE índice 0)
         console.log(`🎯 FORÇANDO início da pergunta 0 (primeira pergunta)`);
-        await startQuestion(lobbyId, 0);
+        // lobbyData.currentQuestion já é 0, então está sincronizado
+        await startQuestion(lobbyId, lobbyData.currentQuestion);
 
       } catch (error) {
         console.error('Erro ao iniciar quiz:', error);
@@ -355,6 +380,31 @@ function socketHandler(io) {
       }
     });
 
+    // Evento: Participante confirma que recebeu a pergunta
+    socket.on('question_ready', (data) => {
+      try {
+        const { lobbyId } = data;
+        const lobbyData = lobbies.get(lobbyId);
+        
+        if (!lobbyData || lobbyData.timerStarted) return;
+        
+        lobbyData.questionReadyCount++;
+        console.log(`✅ Participante confirmou recebimento (${lobbyData.questionReadyCount}/${lobbyData.participants.size})`);
+        
+        // Se todos confirmaram, iniciar timer
+        if (lobbyData.questionReadyCount >= lobbyData.participants.size) {
+          console.log(`🎯 Todos os ${lobbyData.participants.size} participantes confirmaram - iniciando timer!`);
+          const currentQuestion = lobbyData.quiz[lobbyData.currentQuestion];
+          if (currentQuestion) {
+            startQuestionTimer(lobbyId, lobbyData.currentQuestion, currentQuestion.time_limit_seconds);
+          }
+        }
+        
+      } catch (error) {
+        console.error('Erro ao processar question_ready:', error);
+      }
+    });
+
     // Evento: Admin remove participante
     socket.on('kick_participant', async (data) => {
       try {
@@ -424,6 +474,7 @@ function socketHandler(io) {
   async function startQuestion(lobbyId, questionIndex) {
     console.log(`🎯 [CHAMADA] startQuestion(${lobbyId}, ${questionIndex})`);
     console.log(`🎯 Iniciando pergunta ${questionIndex + 1} no lobby ${lobbyId}`);
+    console.log(`🔍 ANÁLISE: questionIndex=${questionIndex}, será enviado como questionIndex=${questionIndex + 1} para o frontend`);
     
     const lobbyData = lobbies.get(lobbyId);
     if (!lobbyData || !lobbyData.quiz) {
@@ -431,7 +482,11 @@ function socketHandler(io) {
       return;
     }
     
-    console.log(`🔢 Estado atual: lobbyData.currentQuestion = ${lobbyData.currentQuestion}`);
+    // Sincronizar currentQuestion com questionIndex
+    console.log(`🔢 Estado ANTES: lobbyData.currentQuestion = ${lobbyData.currentQuestion}`);
+    lobbyData.currentQuestion = questionIndex;
+    console.log(`🔢 Estado DEPOIS: lobbyData.currentQuestion = ${lobbyData.currentQuestion} (sincronizado)`);
+    console.log(`🔄 SINCRONIZAÇÃO: currentQuestion agora é ${questionIndex}, igual ao questionIndex passado`);
 
     console.log(`🔍 Debug - Total perguntas: ${lobbyData.quiz.length}, Índice atual: ${questionIndex}`);
     
@@ -460,13 +515,52 @@ function socketHandler(io) {
     
     console.log(`📤 Enviando question_start para lobby ${lobbyId} (pergunta ${questionIndex + 1})`);
     
+    // Inicializar sistema de confirmação de recebimento
+    lobbyData.questionReadyCount = 0;
+    lobbyData.questionStartTime = null;
+    lobbyData.timerStarted = false;
+    
     io.to(lobbyId).emit('question_start', questionData);
+    
+    console.log(`⏳ Aguardando confirmação de recebimento de ${lobbyData.participants.size} participantes...`);
+    
+    // Timer de segurança: se nem todos confirmarem em 5 segundos, inicia mesmo assim
+    lobbyData.safetyTimer = setTimeout(() => {
+      if (!lobbyData.timerStarted) {
+        console.log(`⚠️ Timer de segurança acionado - iniciando contagem mesmo sem todas as confirmações`);
+        startQuestionTimer(lobbyId, questionIndex, question.time_limit_seconds);
+      }
+    }, 5000);
+  }
 
-    // Timer para finalizar pergunta
+  // Função para iniciar o timer da pergunta (quando todos estão prontos)
+  function startQuestionTimer(lobbyId, questionIndex, timeLimitSeconds) {
+    const lobbyData = lobbies.get(lobbyId);
+    if (!lobbyData || lobbyData.timerStarted) return;
+    
+    console.log(`⏰ Iniciando timer de ${timeLimitSeconds}s para pergunta ${questionIndex + 1}`);
+    console.log(`🚦 Todos os participantes confirmaram recebimento - timer oficial iniciado!`);
+    
+    lobbyData.timerStarted = true;
+    lobbyData.questionStartTime = new Date().toISOString();
+    
+    // Cancelar timer de segurança se existir
+    if (lobbyData.safetyTimer) {
+      clearTimeout(lobbyData.safetyTimer);
+      lobbyData.safetyTimer = null;
+    }
+    
+    // Notificar todos que o timer oficial iniciou
+    io.to(lobbyId).emit('timer_started', { 
+      startTime: lobbyData.questionStartTime,
+      timeLimitSeconds 
+    });
+    
+    // Timer principal para finalizar pergunta
     lobbyData.timer = setTimeout(() => {
       console.log(`⏰ Tempo esgotado para pergunta ${questionIndex + 1}`);
       endQuestion(lobbyId, questionIndex);
-    }, question.time_limit_seconds * 1000);
+    }, timeLimitSeconds * 1000);
   }
 
   // Função para finalizar uma pergunta
@@ -512,8 +606,8 @@ function socketHandler(io) {
       
       // Verificar se há próxima pergunta
       if (nextQuestionIndex < lobbyData.quiz.length) {
-        console.log(`✅ Próxima pergunta existe, atualizando currentQuestion de ${lobbyData.currentQuestion} para ${nextQuestionIndex}`);
-        lobbyData.currentQuestion = nextQuestionIndex;
+        console.log(`✅ Próxima pergunta existe (índice ${nextQuestionIndex})`);
+        // startQuestion vai sincronizar currentQuestion automaticamente
         startQuestion(lobbyId, nextQuestionIndex);
       } else {
         console.log(`🏁 Todas as perguntas foram respondidas (tentou acessar índice ${nextQuestionIndex})`);

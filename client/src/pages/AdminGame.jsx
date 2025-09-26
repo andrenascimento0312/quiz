@@ -22,8 +22,9 @@ function AdminGame() {
       setupSocketListeners()
       connect()
       
-      // Autenticar admin
+      // Autenticar admin apenas uma vez
       const token = localStorage.getItem('adminToken')
+      console.log('🔐 AdminGame - Autenticando admin no lobby:', lobbyId)
       authenticateAdmin(token, lobbyId)
     }
 
@@ -31,6 +32,7 @@ function AdminGame() {
       if (socket) {
         socket.off('admin_authenticated')
         socket.off('question_start')
+        socket.off('timer_started')
         socket.off('question_end')
         socket.off('score_update')
         socket.off('final_results')
@@ -46,11 +48,22 @@ function AdminGame() {
 
     socket.on('question_start', (data) => {
       console.log('🎯 Nova pergunta iniciada no AdminGame:', data)
+      console.log(`📊 AdminGame recebeu: Pergunta ${data.questionIndex} de ${data.totalQuestions}`)
+      console.log(`❓ Texto da pergunta: "${data.text}"`)
       setCurrentQuestion(data)
       setShowResults(false)
       setQuestionResult(null)
       setAnsweredCount(0)
       setNextQuestionTimer(null) // Resetar timer
+      
+      // Admin também confirma recebimento (para não atrasar o timer)
+      console.log('📤 Admin confirmando recebimento da pergunta...')
+      socket.emit('question_ready', { lobbyId })
+    })
+
+    socket.on('timer_started', (data) => {
+      console.log('⏰ Timer oficial iniciado no admin:', data)
+      // Timer sincronizado - agora é justo para todos!
     })
 
     socket.on('question_end', (data) => {

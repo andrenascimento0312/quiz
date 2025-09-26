@@ -46,6 +46,7 @@ function ParticipantGame() {
     return () => {
       if (socket) {
         socket.off('question_start')
+        socket.off('timer_started')
         socket.off('question_end')
         socket.off('score_update')
         socket.off('final_results')
@@ -62,6 +63,15 @@ function ParticipantGame() {
       setHasAnswered(false)
       setShowResults(false)
       setQuestionResult(null)
+      
+      // Confirmar que recebeu a pergunta (para sincronizar timer)
+      console.log('📤 Confirmando recebimento da pergunta...')
+      socket.emit('question_ready', { lobbyId })
+    })
+
+    socket.on('timer_started', (data) => {
+      console.log('⏰ Timer oficial iniciado:', data)
+      // Aqui você pode sincronizar o timer visual se tiver um
     })
 
     socket.on('question_end', (data) => {
