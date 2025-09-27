@@ -293,10 +293,9 @@ function socketHandler(io) {
         console.log(`🔢 currentQuestion inicializado como: ${lobbyData.currentQuestion}`);
         console.log(`📋 Quiz carregado:`, lobbyData.quiz.map((q, i) => `${i}: ${q.text.substring(0, 50)}...`));
         
-        // Iniciar primeira pergunta (SEMPRE índice 0)
-        console.log(`🎯 FORÇANDO início da pergunta 0 (primeira pergunta)`);
-        // lobbyData.currentQuestion já é 0, então está sincronizado
-        await startQuestion(lobbyId, lobbyData.currentQuestion);
+        // CORREÇÃO DEFINITIVA: Pergunta simulada de 10s antes da primeira pergunta real
+        console.log(`🎯 INICIANDO PERGUNTA SIMULADA DE 10 SEGUNDOS`);
+        await startSimulatedQuestion(lobbyId);
 
       } catch (error) {
         console.error('Erro ao iniciar quiz:', error);
@@ -452,6 +451,66 @@ function socketHandler(io) {
       }
     });
   });
+
+  // Função para iniciar pergunta simulada de 10 segundos
+  async function startSimulatedQuestion(lobbyId) {
+    console.log(`🎯 [SIMULADA] startSimulatedQuestion(${lobbyId})`);
+    
+    const lobbyData = lobbies.get(lobbyId);
+    if (!lobbyData) {
+      console.log('❌ Lobby não encontrado na memória');
+      return;
+    }
+    
+    // Pergunta simulada
+    const simulatedQuestion = {
+      questionId: 'simulated',
+      text: 'O quiz está sendo preparado...',
+      options: [
+        { id: 'A', text: 'Aguarde...' },
+        { id: 'B', text: 'Carregando...' },
+        { id: 'C', text: 'Preparando...' },
+        { id: 'D', text: 'Iniciando...' }
+      ],
+      timeLimitSeconds: 10,
+      startedAt: new Date().toISOString(),
+      questionIndex: 0,
+      totalQuestions: lobbyData.quiz.length,
+      simulated: true
+    };
+    
+    console.log(`📤 Enviando pergunta simulada para admin e participantes`);
+    
+    // 1. Enviar para admin (se conectado)
+    if (lobbyData.adminSocket) {
+      const adminSocket = io.sockets.sockets.get(lobbyData.adminSocket);
+      if (adminSocket) {
+        adminSocket.emit('question_start', simulatedQuestion);
+        console.log(`✅ pergunta simulada enviada para admin: ${lobbyData.adminSocket}`);
+      }
+    }
+    
+    // 2. Enviar para cada participante individualmente
+    for (const [participantId, participant] of lobbyData.participants) {
+      if (participant.socketId) {
+        const participantSocket = io.sockets.sockets.get(participant.socketId);
+        if (participantSocket) {
+          participantSocket.emit('question_start', simulatedQuestion);
+          console.log(`✅ pergunta simulada enviada para participante ${participant.nickname}: ${participant.socketId}`);
+        } else {
+          console.log(`❌ Socket do participante ${participant.nickname} não encontrado: ${participant.socketId}`);
+        }
+      } else {
+        console.log(`❌ Participante ${participant.nickname} sem socket conectado`);
+      }
+    }
+    
+    // Timer de 10 segundos para a pergunta simulada
+    lobbyData.simulatedTimer = setTimeout(() => {
+      console.log(`⏰ Pergunta simulada finalizada - iniciando primeira pergunta real`);
+      startQuestion(lobbyId, 0); // Iniciar primeira pergunta real
+    }, 10000);
+  }
 
   // Função para iniciar uma pergunta
   async function startQuestion(lobbyId, questionIndex) {

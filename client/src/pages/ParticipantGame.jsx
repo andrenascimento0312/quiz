@@ -93,6 +93,12 @@ function ParticipantGame() {
       console.log('🔍 DEBUG: Lobby ID:', participantData.lobbyId)
       console.log('🔍 DEBUG: Socket conectado:', socket.connected)
       console.log('🔍 DEBUG: Rooms do socket:', socket.rooms)
+      
+      // Verificar se é pergunta simulada
+      if (data.simulated) {
+        console.log('🎭 PERGUNTA SIMULADA: Não permitir resposta')
+      }
+      
       setCurrentQuestion(data)
       setSelectedOption(null)
       setHasAnswered(false)
@@ -154,6 +160,12 @@ function ParticipantGame() {
 
   const handleOptionClick = (optionId) => {
     if (hasAnswered || !currentQuestion) return
+    
+    // Não permitir resposta em pergunta simulada
+    if (currentQuestion.simulated) {
+      console.log('🚫 Resposta bloqueada: pergunta simulada')
+      return
+    }
     
     setSelectedOption(optionId)
     submitAnswer(lobbyId, currentQuestion.questionId, optionId)
