@@ -13,8 +13,8 @@ async function ensureAdminExists(req, res, next) {
     const config = getConfig();
     const db = createConnection();
     
-    // Verificar se o admin específico existe
-    const admin = await runQuery(db, 'SELECT id FROM admins WHERE email = ?', [config.admin.email]);
+    // Verificar se o admin específico existe E está aprovado
+    const admin = await runQuery(db, 'SELECT id, status FROM admins WHERE email = ?', [config.admin.email]);
     
     if (!admin) {
       console.log('🚨 EMERGÊNCIA: Admin não encontrado, recriando...');
@@ -29,7 +29,19 @@ async function ensureAdminExists(req, res, next) {
         passwordHash
       ]);
       
-      console.log('✅ EMERGÊNCIA: Admin recriado com sucesso');
+      console.log('✅ EMERGÊNCIA: Admin recriado com status approved');
+    } else if (admin.status !== 'approved') {
+      console.log('🚨 EMERGÊNCIA: Admin existe mas status inválido:', admin.status, '- Corrigindo...');
+      
+      await runQuery(db, `
+        UPDATE admins 
+        SET status = 'approved', role = 'superadmin', approved_at = CURRENT_TIMESTAMP 
+        WHERE email = ?
+      `, [config.admin.email]);
+      
+      console.log('✅ EMERGÊNCIA: Status do admin corrigido para approved');
+    } else {
+      console.log('✅ Admin existe e está aprovado');
     }
     
     db.close();

@@ -32,9 +32,15 @@ async function authenticateToken(req, res, next) {
 
     // Verificar se conta ainda está ativa (compatibilidade com bancos sem status)
     if (admin.status && admin.status !== 'approved') {
-      console.log('🚨 Admin com status inválido:', admin.status);
+      console.log('🚨 BLOQUEADO: Admin com status inválido:', admin.status, '(precisa ser "approved")');
       return res.status(401).json({ error: 'Conta não aprovada ou restrita' });
     }
+    
+    if (!admin.status) {
+      console.log('⚠️ Admin sem campo status - assumindo aprovado para compatibilidade');
+    }
+    
+    console.log('✅ AUTORIZADO: Admin passou em todas as verificações');
 
     req.admin = admin;
     next();
