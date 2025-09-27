@@ -39,8 +39,19 @@ function ParticipantGame() {
 
   useEffect(() => {
     if (socket && participantData) {
+      console.log('🔌 ParticipantGame: Conectando socket para participante:', participantData)
       setupSocketListeners()
       connect()
+      
+      // IMPORTANTE: Reconectar ao lobby quando chegar na página do jogo
+      console.log('🔄 ParticipantGame: Reconectando ao lobby...')
+      setTimeout(() => {
+        console.log('📡 ParticipantGame: Enviando join_lobby...')
+        socket.emit('join_lobby', { 
+          lobbyId: participantData.lobbyId, 
+          nickname: participantData.nickname 
+        })
+      }, 1000)
     }
 
     return () => {
@@ -56,16 +67,17 @@ function ParticipantGame() {
   }, [socket, participantData])
 
   const setupSocketListeners = () => {
+    console.log('🔧 ParticipantGame: Configurando listeners do socket')
+    
     socket.on('question_start', (data) => {
-      console.log('Nova pergunta:', data)
+      console.log('🎯 ParticipantGame: Nova pergunta recebida!', data)
       setCurrentQuestion(data)
       setSelectedOption(null)
       setHasAnswered(false)
       setShowResults(false)
       setQuestionResult(null)
       
-      // Sistema simplificado - sem confirmações desnecessárias
-      console.log('✅ Pergunta recebida e exibida!')
+      console.log('✅ ParticipantGame: Pergunta configurada no estado!')
     })
 
     socket.on('timer_started', (data) => {
