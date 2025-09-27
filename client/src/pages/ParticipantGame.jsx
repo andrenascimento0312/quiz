@@ -47,10 +47,19 @@ function ParticipantGame() {
       console.log('🔄 ParticipantGame: Reconectando ao lobby...')
       setTimeout(() => {
         console.log('📡 ParticipantGame: Enviando join_lobby...')
+        console.log('🔍 DEBUG: Socket conectado antes do join:', socket.connected)
+        console.log('🔍 DEBUG: Socket ID antes do join:', socket.id)
         socket.emit('join_lobby', { 
           lobbyId: participantData.lobbyId, 
           nickname: participantData.nickname 
         })
+        
+        // Verificar se entrou no room após 2 segundos
+        setTimeout(() => {
+          console.log('🔍 DEBUG: Socket conectado após join:', socket.connected)
+          console.log('🔍 DEBUG: Socket ID após join:', socket.id)
+          console.log('🔍 DEBUG: Rooms do socket:', socket.rooms)
+        }, 2000)
       }, 1000)
     }
 
@@ -62,6 +71,7 @@ function ParticipantGame() {
         socket.off('score_update')
         socket.off('final_results')
         socket.off('answer_submitted')
+        socket.off('join_success')
       }
     }
   }, [socket, participantData])
@@ -86,6 +96,12 @@ function ParticipantGame() {
     socket.on('timer_started', (data) => {
       console.log('⏰ Timer oficial iniciado:', data)
       // Aqui você pode sincronizar o timer visual se tiver um
+    })
+
+    socket.on('join_success', (data) => {
+      console.log('✅ ParticipantGame: Join success recebido:', data)
+      console.log('🔍 DEBUG: Socket conectado após join_success:', socket.connected)
+      console.log('🔍 DEBUG: Socket ID após join_success:', socket.id)
     })
 
     socket.on('question_end', (data) => {

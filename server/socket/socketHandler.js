@@ -77,6 +77,9 @@ function socketHandler(io) {
         db.close();
 
         console.log(`✅ Admin ${admin.name} autenticado no lobby ${lobbyId}`);
+        console.log(`🔍 DEBUG: Admin socket ${socket.id} está no room ${lobbyId}:`, socket.rooms.has(lobbyId));
+        console.log(`🔍 DEBUG: Rooms do admin socket ${socket.id}:`, Array.from(socket.rooms));
+        
         socket.emit('admin_authenticated', { admin, lobbyId });
         
         // Enviar estado atual do lobby
@@ -199,6 +202,9 @@ function socketHandler(io) {
         });
 
         console.log(`👤 Participante ${nickname} (ID: ${participantId}) entrou no lobby ${lobbyId}`);
+        console.log(`🔍 DEBUG: Participante socket ${socket.id} está no room ${lobbyId}:`, socket.rooms.has(lobbyId));
+        console.log(`🔍 DEBUG: Rooms do socket ${socket.id}:`, Array.from(socket.rooms));
+        
         socket.emit('join_success', { participantId, nickname, lobbyId });
         
         // Notificar todos sobre atualização
