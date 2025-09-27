@@ -503,23 +503,32 @@ function socketHandler(io) {
     lobbyData.questionStartTime = null;
     lobbyData.timerStarted = false;
     
-    // DEBUG: Verificar quem está no lobby antes de enviar
-    const lobbyDataDebug = lobbies.get(lobbyId);
-    console.log(`🔍 DEBUG: Participantes no lobby ${lobbyId}:`, Array.from(lobbyDataDebug.participants.keys()));
-    console.log(`🔍 DEBUG: Admin no lobby:`, lobbyDataDebug.adminSocket ? 'SIM' : 'NÃO');
+    // CORREÇÃO DEFINITIVA: Enviar para admin e participantes separadamente
+    console.log(`📤 Enviando question_start para admin e participantes`);
     
-    // Verificar quantos sockets estão conectados ao lobby
-    const room = io.sockets.adapter.rooms.get(lobbyId);
-    console.log(`🔍 DEBUG: Sockets conectados ao room ${lobbyId}:`, room ? room.size : 0);
+    // 1. Enviar para admin (se conectado)
+    if (lobbyData.adminSocket) {
+      const adminSocket = io.sockets.sockets.get(lobbyData.adminSocket);
+      if (adminSocket) {
+        adminSocket.emit('question_start', questionData);
+        console.log(`✅ question_start enviado para admin: ${lobbyData.adminSocket}`);
+      }
+    }
     
-    console.log(`📤 DEBUG: Enviando question_start para room ${lobbyId}`);
-    console.log(`📤 DEBUG: Dados da pergunta:`, {
-      questionId: questionData.questionId,
-      text: questionData.text.substring(0, 50) + '...',
-      timeLimitSeconds: questionData.timeLimitSeconds
-    });
-    
-    io.to(lobbyId).emit('question_start', questionData);
+    // 2. Enviar para cada participante individualmente
+    for (const [participantId, participant] of lobbyData.participants) {
+      if (participant.socketId) {
+        const participantSocket = io.sockets.sockets.get(participant.socketId);
+        if (participantSocket) {
+          participantSocket.emit('question_start', questionData);
+          console.log(`✅ question_start enviado para participante ${participant.nickname}: ${participant.socketId}`);
+        } else {
+          console.log(`❌ Socket do participante ${participant.nickname} não encontrado: ${participant.socketId}`);
+        }
+      } else {
+        console.log(`❌ Participante ${participant.nickname} sem socket conectado`);
+      }
+    }
     
     console.log(`🚀 INICIANDO TIMER IMEDIATAMENTE - SEM COMPLICAÇÃO`);
     
@@ -540,11 +549,31 @@ function socketHandler(io) {
     
     // Timer de segurança removido - sistema simplificado
     
-    // Notificar todos que o timer oficial iniciou
-    io.to(lobbyId).emit('timer_started', { 
+    // CORREÇÃO DEFINITIVA: Enviar timer_started para admin e participantes separadamente
+    const timerData = { 
       startTime: lobbyData.questionStartTime,
       timeLimitSeconds 
-    });
+    };
+    
+    // 1. Enviar para admin (se conectado)
+    if (lobbyData.adminSocket) {
+      const adminSocket = io.sockets.sockets.get(lobbyData.adminSocket);
+      if (adminSocket) {
+        adminSocket.emit('timer_started', timerData);
+        console.log(`✅ timer_started enviado para admin: ${lobbyData.adminSocket}`);
+      }
+    }
+    
+    // 2. Enviar para cada participante individualmente
+    for (const [participantId, participant] of lobbyData.participants) {
+      if (participant.socketId) {
+        const participantSocket = io.sockets.sockets.get(participant.socketId);
+        if (participantSocket) {
+          participantSocket.emit('timer_started', timerData);
+          console.log(`✅ timer_started enviado para participante ${participant.nickname}: ${participant.socketId}`);
+        }
+      }
+    }
     
     // Timer principal para finalizar pergunta
     lobbyData.timer = setTimeout(() => {
