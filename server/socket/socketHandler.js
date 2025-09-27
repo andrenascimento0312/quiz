@@ -378,7 +378,7 @@ function socketHandler(io) {
       }
     });
 
-    // Evento: Participante confirma que recebeu a pergunta
+    // Evento: Participante/Admin confirma que VIU a pergunta
     socket.on('question_ready', (data) => {
       try {
         const { lobbyId } = data;
@@ -386,12 +386,14 @@ function socketHandler(io) {
         
         if (!lobbyData || lobbyData.timerStarted) return;
         
-        lobbyData.questionReadyCount++;
-        console.log(`✅ Participante confirmou recebimento (${lobbyData.questionReadyCount}/${lobbyData.participants.size})`);
+        lobbyData.questionReadyCount = (lobbyData.questionReadyCount || 0) + 1;
+        const totalNeeded = lobbyData.participants.size + 1; // participantes + admin
         
-        // Se todos confirmaram, iniciar timer
-        if (lobbyData.questionReadyCount >= lobbyData.participants.size) {
-          console.log(`🎯 Todos os ${lobbyData.participants.size} participantes confirmaram - iniciando timer!`);
+        console.log(`✅ Confirmação recebida (${lobbyData.questionReadyCount}/${totalNeeded})`);
+        
+        // Se TODOS confirmaram que viram, iniciar timer IMEDIATAMENTE
+        if (lobbyData.questionReadyCount >= totalNeeded) {
+          console.log(`🎯 TODOS viram a pergunta - iniciando timer AGORA!`);
           const currentQuestion = lobbyData.quiz[lobbyData.currentQuestion];
           if (currentQuestion) {
             startQuestionTimer(lobbyId, lobbyData.currentQuestion, currentQuestion.time_limit_seconds);
@@ -520,15 +522,13 @@ function socketHandler(io) {
     
     io.to(lobbyId).emit('question_start', questionData);
     
-    console.log(`⏳ Aguardando confirmação de recebimento de ${lobbyData.participants.size} participantes...`);
+    console.log(`⏳ Aguardando confirmação de que TODOS viram a pergunta...`);
     
-    // Timer de segurança: se nem todos confirmarem em 5 segundos, inicia mesmo assim
-    lobbyData.safetyTimer = setTimeout(() => {
-      if (!lobbyData.timerStarted) {
-        console.log(`⚠️ Timer de segurança acionado - iniciando contagem mesmo sem todas as confirmações`);
-        startQuestionTimer(lobbyId, questionIndex, question.time_limit_seconds);
-      }
-    }, 5000);
+    // Aguardar 1 segundo para garantir que todos receberam a pergunta
+    setTimeout(() => {
+      console.log(`🚀 Iniciando timer da pergunta (todos devem ter visto)`);
+      startQuestionTimer(lobbyId, questionIndex, question.time_limit_seconds);
+    }, 1000);
   }
 
   // Função para iniciar o timer da pergunta (quando todos estão prontos)
@@ -542,11 +542,7 @@ function socketHandler(io) {
     lobbyData.timerStarted = true;
     lobbyData.questionStartTime = new Date().toISOString();
     
-    // Cancelar timer de segurança se existir
-    if (lobbyData.safetyTimer) {
-      clearTimeout(lobbyData.safetyTimer);
-      lobbyData.safetyTimer = null;
-    }
+    // Timer de segurança removido - sistema simplificado
     
     // Notificar todos que o timer oficial iniciou
     io.to(lobbyId).emit('timer_started', { 

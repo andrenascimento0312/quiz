@@ -64,8 +64,8 @@ function ParticipantGame() {
       setShowResults(false)
       setQuestionResult(null)
       
-      // Confirmar que recebeu a pergunta (para sincronizar timer)
-      console.log('📤 Confirmando recebimento da pergunta...')
+      // Confirmar que VIU a pergunta (crítico para timer justo)
+      console.log('📤 Confirmando que VI a pergunta...')
       socket.emit('question_ready', { lobbyId })
     })
 
