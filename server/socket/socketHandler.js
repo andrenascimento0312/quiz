@@ -465,12 +465,12 @@ function socketHandler(io) {
     // Pergunta simulada
     const simulatedQuestion = {
       questionId: 'simulated',
-      text: 'O quiz está sendo preparado...',
+      text: '🚀 Preparando o quiz...',
       options: [
-        { id: 'A', text: 'Aguarde...' },
-        { id: 'B', text: 'Carregando...' },
-        { id: 'C', text: 'Preparando...' },
-        { id: 'D', text: 'Iniciando...' }
+        { id: 'A', text: '⏳ Aguarde...' },
+        { id: 'B', text: '🔄 Carregando...' },
+        { id: 'C', text: '⚡ Preparando...' },
+        { id: 'D', text: '🎯 Iniciando...' }
       ],
       timeLimitSeconds: 10,
       startedAt: new Date().toISOString(),
@@ -502,6 +502,32 @@ function socketHandler(io) {
         }
       } else {
         console.log(`❌ Participante ${participant.nickname} sem socket conectado`);
+      }
+    }
+    
+    // Enviar timer_started para pergunta simulada
+    const timerData = { 
+      startTime: simulatedQuestion.startedAt,
+      timeLimitSeconds: 10
+    };
+    
+    // 1. Enviar para admin (se conectado)
+    if (lobbyData.adminSocket) {
+      const adminSocket = io.sockets.sockets.get(lobbyData.adminSocket);
+      if (adminSocket) {
+        adminSocket.emit('timer_started', timerData);
+        console.log(`✅ timer_started (simulado) enviado para admin: ${lobbyData.adminSocket}`);
+      }
+    }
+    
+    // 2. Enviar para cada participante individualmente
+    for (const [participantId, participant] of lobbyData.participants) {
+      if (participant.socketId) {
+        const participantSocket = io.sockets.sockets.get(participant.socketId);
+        if (participantSocket) {
+          participantSocket.emit('timer_started', timerData);
+          console.log(`✅ timer_started (simulado) enviado para participante ${participant.nickname}: ${participant.socketId}`);
+        }
       }
     }
     

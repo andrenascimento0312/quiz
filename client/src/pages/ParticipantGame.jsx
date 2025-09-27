@@ -110,7 +110,12 @@ function ParticipantGame() {
 
     socket.on('timer_started', (data) => {
       console.log('⏰ Timer oficial iniciado:', data)
-      // Aqui você pode sincronizar o timer visual se tiver um
+      
+      // Se é pergunta simulada, mostrar timer visual
+      if (currentQuestion && currentQuestion.simulated) {
+        console.log('🎭 Timer simulado iniciado: 10 segundos')
+        // O componente Timer já vai mostrar automaticamente
+      }
     })
 
     socket.on('join_success', (data) => {
