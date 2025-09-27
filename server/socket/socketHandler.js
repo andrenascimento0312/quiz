@@ -40,6 +40,7 @@ function socketHandler(io) {
         socket.lobbyId = lobbyId;
         socket.isAdmin = true;
         socket.join(lobbyId);
+        console.log(`🔗 DEBUG: Admin socket ${socket.id} entrou no room ${lobbyId}`);
 
         // Inicializar lobby em memória se não existir
         if (!lobbies.has(lobbyId)) {
@@ -174,6 +175,7 @@ function socketHandler(io) {
         socket.nickname = nickname;
         socket.isAdmin = false;
         socket.join(lobbyId);
+        console.log(`🔗 DEBUG: Socket ${socket.id} entrou no room ${lobbyId}`);
 
         // Atualizar lobby em memória
         if (!lobbies.has(lobbyId)) {
@@ -494,6 +496,15 @@ function socketHandler(io) {
     // questionReadyCount removido - sistema simplificado
     lobbyData.questionStartTime = null;
     lobbyData.timerStarted = false;
+    
+    // DEBUG: Verificar quem está no lobby antes de enviar
+    const lobbyDataDebug = lobbies.get(lobbyId);
+    console.log(`🔍 DEBUG: Participantes no lobby ${lobbyId}:`, Array.from(lobbyDataDebug.participants.keys()));
+    console.log(`🔍 DEBUG: Admin no lobby:`, lobbyDataDebug.adminSocket ? 'SIM' : 'NÃO');
+    
+    // Verificar quantos sockets estão conectados ao lobby
+    const room = io.sockets.adapter.rooms.get(lobbyId);
+    console.log(`🔍 DEBUG: Sockets conectados ao room ${lobbyId}:`, room ? room.size : 0);
     
     io.to(lobbyId).emit('question_start', questionData);
     

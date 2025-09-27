@@ -71,6 +71,9 @@ function ParticipantGame() {
     
     socket.on('question_start', (data) => {
       console.log('🎯 ParticipantGame: Nova pergunta recebida!', data)
+      console.log('🔍 DEBUG: Socket ID:', socket.id)
+      console.log('🔍 DEBUG: Lobby ID:', participantData.lobbyId)
+      console.log('🔍 DEBUG: Socket conectado:', socket.connected)
       setCurrentQuestion(data)
       setSelectedOption(null)
       setHasAnswered(false)
