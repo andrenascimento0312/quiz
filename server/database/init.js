@@ -15,12 +15,32 @@ if (USE_POSTGRES) {
   const DB_PATH = process.env.NODE_ENV === 'production' 
     ? '/app/data/quiz.db'  // Railway volume persistente
     : path.join(__dirname, '../data/quiz.db'); // Local
+  
+  console.log(`🗄️ Caminho do banco: ${DB_PATH}`);
+  console.log(`🗄️ Ambiente: ${process.env.NODE_ENV}`);
+  console.log(`🗄️ Volume persistente: ${process.env.NODE_ENV === 'production' ? 'SIM' : 'NÃO'}`);
 
 // Garantir que o diretório data existe
 function ensureDataDir() {
   const dataDir = path.dirname(DB_PATH);
+  console.log(`📁 Verificando diretório: ${dataDir}`);
+  
   if (!fs.existsSync(dataDir)) {
+    console.log(`📁 Criando diretório: ${dataDir}`);
     fs.mkdirSync(dataDir, { recursive: true });
+    console.log(`✅ Diretório criado com sucesso`);
+  } else {
+    console.log(`✅ Diretório já existe`);
+  }
+  
+  // Verificar se o arquivo do banco existe
+  if (fs.existsSync(DB_PATH)) {
+    console.log(`✅ Banco de dados já existe: ${DB_PATH}`);
+    const stats = fs.statSync(DB_PATH);
+    console.log(`📊 Tamanho do banco: ${stats.size} bytes`);
+    console.log(`📅 Última modificação: ${stats.mtime}`);
+  } else {
+    console.log(`🆕 Banco de dados será criado: ${DB_PATH}`);
   }
 }
 
