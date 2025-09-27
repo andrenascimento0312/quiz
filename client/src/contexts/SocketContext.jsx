@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { io } from 'socket.io-client'
 import toast from 'react-hot-toast'
+import { SOCKET_URL } from '../config/api'
 
 const SocketContext = createContext()
 
@@ -10,7 +11,8 @@ export function SocketProvider({ children }) {
 
   useEffect(() => {
     // Criar conexão WebSocket
-    const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:3001', {
+    console.log('🔌 Conectando WebSocket em:', SOCKET_URL);
+    const newSocket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: false
     })
