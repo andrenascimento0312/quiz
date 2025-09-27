@@ -84,6 +84,7 @@ function ParticipantGame() {
       console.log('🔍 DEBUG: Socket ID:', socket.id)
       console.log('🔍 DEBUG: Lobby ID:', participantData.lobbyId)
       console.log('🔍 DEBUG: Socket conectado:', socket.connected)
+      console.log('🔍 DEBUG: Rooms do socket:', socket.rooms)
       setCurrentQuestion(data)
       setSelectedOption(null)
       setHasAnswered(false)

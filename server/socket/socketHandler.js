@@ -512,6 +512,13 @@ function socketHandler(io) {
     const room = io.sockets.adapter.rooms.get(lobbyId);
     console.log(`🔍 DEBUG: Sockets conectados ao room ${lobbyId}:`, room ? room.size : 0);
     
+    console.log(`📤 DEBUG: Enviando question_start para room ${lobbyId}`);
+    console.log(`📤 DEBUG: Dados da pergunta:`, {
+      questionId: questionData.questionId,
+      text: questionData.text.substring(0, 50) + '...',
+      timeLimitSeconds: questionData.timeLimitSeconds
+    });
+    
     io.to(lobbyId).emit('question_start', questionData);
     
     console.log(`🚀 INICIANDO TIMER IMEDIATAMENTE - SEM COMPLICAÇÃO`);
