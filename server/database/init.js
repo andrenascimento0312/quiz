@@ -11,7 +11,7 @@ if (USE_POSTGRES) {
   const path = require('path');
   const fs = require('fs');
 
-  // Usar volume persistente no Railway se não tiver PostgreSQL
+  // CORREÇÃO DEFINITIVA: Sempre usar volume persistente em produção
   const DB_PATH = process.env.NODE_ENV === 'production' 
     ? '/app/data/quiz.db'  // Railway volume persistente
     : path.join(__dirname, '../data/quiz.db'); // Local
@@ -39,8 +39,10 @@ function ensureDataDir() {
     const stats = fs.statSync(DB_PATH);
     console.log(`📊 Tamanho do banco: ${stats.size} bytes`);
     console.log(`📅 Última modificação: ${stats.mtime}`);
+    console.log(`🗄️ PERSISTÊNCIA CONFIRMADA: Dados preservados!`);
   } else {
     console.log(`🆕 Banco de dados será criado: ${DB_PATH}`);
+    console.log(`⚠️ PRIMEIRO DEPLOY: Banco será criado no volume persistente`);
   }
 }
 

@@ -45,21 +45,29 @@ function ParticipantGame() {
       
       // IMPORTANTE: Reconectar ao lobby quando chegar na página do jogo
       console.log('🔄 ParticipantGame: Reconectando ao lobby...')
+      // CORREÇÃO DEFINITIVA: Enviar join_lobby IMEDIATAMENTE
+      console.log('📡 ParticipantGame: Enviando join_lobby...')
+      console.log('🔍 DEBUG: Socket conectado antes do join:', socket.connected)
+      console.log('🔍 DEBUG: Socket ID antes do join:', socket.id)
+      socket.emit('join_lobby', { 
+        lobbyId: participantData.lobbyId, 
+        nickname: participantData.nickname 
+      })
+      
+      // Verificar se entrou no room após 1 segundo
       setTimeout(() => {
-        console.log('📡 ParticipantGame: Enviando join_lobby...')
-        console.log('🔍 DEBUG: Socket conectado antes do join:', socket.connected)
-        console.log('🔍 DEBUG: Socket ID antes do join:', socket.id)
-        socket.emit('join_lobby', { 
-          lobbyId: participantData.lobbyId, 
-          nickname: participantData.nickname 
-        })
+        console.log('🔍 DEBUG: Socket conectado após join:', socket.connected)
+        console.log('🔍 DEBUG: Socket ID após join:', socket.id)
+        console.log('🔍 DEBUG: Rooms do socket:', socket.rooms)
         
-        // Verificar se entrou no room após 2 segundos
-        setTimeout(() => {
-          console.log('🔍 DEBUG: Socket conectado após join:', socket.connected)
-          console.log('🔍 DEBUG: Socket ID após join:', socket.id)
-          console.log('🔍 DEBUG: Rooms do socket:', socket.rooms)
-        }, 2000)
+        // FORÇAR entrada no room se não estiver
+        if (!socket.rooms || !socket.rooms.has(participantData.lobbyId)) {
+          console.log('🚨 CORREÇÃO: Forçando entrada no room')
+          socket.emit('join_lobby', { 
+            lobbyId: participantData.lobbyId, 
+            nickname: participantData.nickname 
+          })
+        }
       }, 1000)
     }
 
