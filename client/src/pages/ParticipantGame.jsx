@@ -166,13 +166,33 @@ function ParticipantGame() {
     )
   }
 
+  // CORREÇÃO DEFINITIVA: NUNCA mostrar loading - sempre mostrar interface
+  // Se não tem pergunta, mostrar interface vazia mas funcional
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto mb-6"></div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Preparando quiz...</h2>
-          <p className="text-gray-600">Aguarde a primeira pergunta</p>
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 p-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-left">
+                <p className="text-sm text-gray-600">Participante</p>
+                <p className="font-semibold text-primary-600">{participantData.nickname}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Lobby</p>
+                <p className="font-semibold text-primary-600">{lobbyId}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Interface vazia mas funcional */}
+          <div className="text-center">
+            <div className="card">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Aguardando pergunta...</h2>
+              <p className="text-gray-600">O quiz será iniciado em breve</p>
+            </div>
+          </div>
         </div>
       </div>
     )
