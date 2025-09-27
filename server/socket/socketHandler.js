@@ -40,7 +40,6 @@ function socketHandler(io) {
         socket.lobbyId = lobbyId;
         socket.isAdmin = true;
         socket.join(lobbyId);
-        console.log(`🔗 DEBUG: Admin socket ${socket.id} entrou no room ${lobbyId}`);
 
         // Inicializar lobby em memória se não existir
         if (!lobbies.has(lobbyId)) {
@@ -77,9 +76,7 @@ function socketHandler(io) {
         db.close();
 
         console.log(`✅ Admin ${admin.name} autenticado no lobby ${lobbyId}`);
-        console.log(`🔍 DEBUG: Admin socket ${socket.id} está no room ${lobbyId}:`, socket.rooms.has(lobbyId));
-        console.log(`🔍 DEBUG: Rooms do admin socket ${socket.id}:`, Array.from(socket.rooms));
-        
+
         socket.emit('admin_authenticated', { admin, lobbyId });
         
         // Enviar estado atual do lobby
@@ -178,7 +175,6 @@ function socketHandler(io) {
         socket.nickname = nickname;
         socket.isAdmin = false;
         socket.join(lobbyId);
-        console.log(`🔗 DEBUG: Socket ${socket.id} entrou no room ${lobbyId}`);
 
         // Atualizar lobby em memória
         if (!lobbies.has(lobbyId)) {
@@ -202,9 +198,7 @@ function socketHandler(io) {
         });
 
         console.log(`👤 Participante ${nickname} (ID: ${participantId}) entrou no lobby ${lobbyId}`);
-        console.log(`🔍 DEBUG: Participante socket ${socket.id} está no room ${lobbyId}:`, socket.rooms.has(lobbyId));
-        console.log(`🔍 DEBUG: Rooms do socket ${socket.id}:`, Array.from(socket.rooms));
-        
+
         socket.emit('join_success', { participantId, nickname, lobbyId });
         
         // Notificar todos sobre atualização
@@ -454,11 +448,8 @@ function socketHandler(io) {
 
   // Função para iniciar pergunta simulada de 10 segundos
   async function startSimulatedQuestion(lobbyId) {
-    console.log(`🎯 [SIMULADA] startSimulatedQuestion(${lobbyId})`);
-    
     const lobbyData = lobbies.get(lobbyId);
     if (!lobbyData) {
-      console.log('❌ Lobby não encontrado na memória');
       return;
     }
     
@@ -479,14 +470,11 @@ function socketHandler(io) {
       simulated: true
     };
     
-    console.log(`📤 Enviando pergunta simulada para admin e participantes`);
-    
     // 1. Enviar para admin (se conectado)
     if (lobbyData.adminSocket) {
       const adminSocket = io.sockets.sockets.get(lobbyData.adminSocket);
       if (adminSocket) {
         adminSocket.emit('question_start', simulatedQuestion);
-        console.log(`✅ pergunta simulada enviada para admin: ${lobbyData.adminSocket}`);
       }
     }
     
@@ -496,12 +484,7 @@ function socketHandler(io) {
         const participantSocket = io.sockets.sockets.get(participant.socketId);
         if (participantSocket) {
           participantSocket.emit('question_start', simulatedQuestion);
-          console.log(`✅ pergunta simulada enviada para participante ${participant.nickname}: ${participant.socketId}`);
-        } else {
-          console.log(`❌ Socket do participante ${participant.nickname} não encontrado: ${participant.socketId}`);
         }
-      } else {
-        console.log(`❌ Participante ${participant.nickname} sem socket conectado`);
       }
     }
     
@@ -516,7 +499,6 @@ function socketHandler(io) {
       const adminSocket = io.sockets.sockets.get(lobbyData.adminSocket);
       if (adminSocket) {
         adminSocket.emit('timer_started', timerData);
-        console.log(`✅ timer_started (simulado) enviado para admin: ${lobbyData.adminSocket}`);
       }
     }
     
@@ -526,7 +508,6 @@ function socketHandler(io) {
         const participantSocket = io.sockets.sockets.get(participant.socketId);
         if (participantSocket) {
           participantSocket.emit('timer_started', timerData);
-          console.log(`✅ timer_started (simulado) enviado para participante ${participant.nickname}: ${participant.socketId}`);
         }
       }
     }
@@ -540,9 +521,6 @@ function socketHandler(io) {
 
   // Função para iniciar uma pergunta
   async function startQuestion(lobbyId, questionIndex) {
-    console.log(`🎯 [CHAMADA] startQuestion(${lobbyId}, ${questionIndex})`);
-    console.log(`🎯 Iniciando pergunta ${questionIndex + 1} no lobby ${lobbyId}`);
-    console.log(`🔍 ANÁLISE: questionIndex=${questionIndex}, será enviado como questionIndex=${questionIndex + 1} para o frontend`);
     
     const lobbyData = lobbies.get(lobbyId);
     if (!lobbyData || !lobbyData.quiz) {
@@ -550,14 +528,8 @@ function socketHandler(io) {
       return;
     }
     
-    // Sincronizar currentQuestion com questionIndex
-    console.log(`🔢 Estado ANTES: lobbyData.currentQuestion = ${lobbyData.currentQuestion}`);
     lobbyData.currentQuestion = questionIndex;
-    console.log(`🔢 Estado DEPOIS: lobbyData.currentQuestion = ${lobbyData.currentQuestion} (sincronizado)`);
-    console.log(`🔄 SINCRONIZAÇÃO: currentQuestion agora é ${questionIndex}, igual ao questionIndex passado`);
 
-    console.log(`🔍 Debug - Total perguntas: ${lobbyData.quiz.length}, Índice atual: ${questionIndex}`);
-    
     const question = lobbyData.quiz[questionIndex];
     if (!question) {
       console.log(`❌ Erro: Pergunta não encontrada no índice ${questionIndex}`);
@@ -565,8 +537,6 @@ function socketHandler(io) {
       return;
     }
 
-    console.log(`📝 Enviando pergunta ${questionIndex + 1}/${lobbyData.quiz.length}`);
-    console.log(`⏱️ Tempo limite: ${question.time_limit_seconds} segundos`);
 
     const startedAt = new Date().toISOString();
     

@@ -39,36 +39,13 @@ function ParticipantGame() {
 
   useEffect(() => {
     if (socket && participantData) {
-      console.log('🔌 ParticipantGame: Conectando socket para participante:', participantData)
       setupSocketListeners()
       connect()
       
-      // IMPORTANTE: Reconectar ao lobby quando chegar na página do jogo
-      console.log('🔄 ParticipantGame: Reconectando ao lobby...')
-      // CORREÇÃO DEFINITIVA: Enviar join_lobby IMEDIATAMENTE
-      console.log('📡 ParticipantGame: Enviando join_lobby...')
-      console.log('🔍 DEBUG: Socket conectado antes do join:', socket.connected)
-      console.log('🔍 DEBUG: Socket ID antes do join:', socket.id)
       socket.emit('join_lobby', { 
         lobbyId: participantData.lobbyId, 
         nickname: participantData.nickname 
       })
-      
-      // Verificar se entrou no room após 1 segundo
-      setTimeout(() => {
-        console.log('🔍 DEBUG: Socket conectado após join:', socket.connected)
-        console.log('🔍 DEBUG: Socket ID após join:', socket.id)
-        console.log('🔍 DEBUG: Rooms do socket:', socket.rooms)
-        
-        // FORÇAR entrada no room se não estiver
-        if (!socket.rooms || !socket.rooms.has(participantData.lobbyId)) {
-          console.log('🚨 CORREÇÃO: Forçando entrada no room')
-          socket.emit('join_lobby', { 
-            lobbyId: participantData.lobbyId, 
-            nickname: participantData.nickname 
-          })
-        }
-      }, 1000)
     }
 
     return () => {
@@ -85,53 +62,28 @@ function ParticipantGame() {
   }, [socket, participantData])
 
   const setupSocketListeners = () => {
-    console.log('🔧 ParticipantGame: Configurando listeners do socket')
-    
     socket.on('question_start', (data) => {
-      console.log('🎯 ParticipantGame: Nova pergunta recebida!', data)
-      console.log('🔍 DEBUG: Socket ID:', socket.id)
-      console.log('🔍 DEBUG: Lobby ID:', participantData.lobbyId)
-      console.log('🔍 DEBUG: Socket conectado:', socket.connected)
-      console.log('🔍 DEBUG: Rooms do socket:', socket.rooms)
-      
-      // Verificar se é pergunta simulada
-      if (data.simulated) {
-        console.log('🎭 PERGUNTA SIMULADA: Não permitir resposta')
-      }
-      
       setCurrentQuestion(data)
       setSelectedOption(null)
       setHasAnswered(false)
       setShowResults(false)
       setQuestionResult(null)
-      
-      console.log('✅ ParticipantGame: Pergunta configurada no estado!')
     })
 
     socket.on('timer_started', (data) => {
-      console.log('⏰ Timer oficial iniciado:', data)
-      
-      // Se é pergunta simulada, mostrar timer visual
-      if (currentQuestion && currentQuestion.simulated) {
-        console.log('🎭 Timer simulado iniciado: 10 segundos')
-        // O componente Timer já vai mostrar automaticamente
-      }
+      // Timer iniciado
     })
 
     socket.on('join_success', (data) => {
-      console.log('✅ ParticipantGame: Join success recebido:', data)
-      console.log('🔍 DEBUG: Socket conectado após join_success:', socket.connected)
-      console.log('🔍 DEBUG: Socket ID após join_success:', socket.id)
+      // Join confirmado
     })
 
     socket.on('question_end', (data) => {
-      console.log('Fim da pergunta:', data)
       setQuestionResult(data)
       setShowResults(true)
     })
 
     socket.on('score_update', (data) => {
-      console.log('Atualização do ranking:', data)
       setRanking(data.ranking)
       
       // Encontrar posição do participante atual
@@ -140,19 +92,15 @@ function ParticipantGame() {
     })
 
     socket.on('final_results', (data) => {
-      console.log('Resultados finais:', data)
-      
       // Salvar ranking no localStorage para a página de resultados
       if (data.ranking) {
         localStorage.setItem(`ranking_${lobbyId}`, JSON.stringify(data.ranking))
-        console.log('💾 Ranking salvo no localStorage:', data.ranking)
       }
       
       navigate(`/results/${lobbyId}`)
     })
 
     socket.on('answer_submitted', (data) => {
-      console.log('Resposta enviada:', data)
       setHasAnswered(true)
       
       if (data.correct) {
@@ -168,7 +116,6 @@ function ParticipantGame() {
     
     // Não permitir resposta em pergunta simulada
     if (currentQuestion.simulated) {
-      console.log('🚫 Resposta bloqueada: pergunta simulada')
       return
     }
     
