@@ -360,18 +360,16 @@ function socketHandler(io) {
         console.log(`📊 Respostas: ${answeredCount}/${totalParticipants} participantes`);
         
         if (answeredCount >= totalParticipants) {
-          console.log(`✅ Todos responderam! Finalizando pergunta antecipadamente`);
+          console.log(`✅ Todos responderam! Finalizando pergunta IMEDIATAMENTE`);
           console.log(`🔢 Pergunta atual que está sendo finalizada: ${lobbyData.currentQuestion} (${lobbyData.currentQuestion + 1}/${lobbyData.quiz.length})`);
           // Cancelar timer
           if (lobbyData.timer) {
             clearTimeout(lobbyData.timer);
             lobbyData.timer = null;
           }
-          // Aguardar 2 segundos antes de finalizar (para admin ver a pergunta)
-          setTimeout(() => {
-            console.log(`⚡ Finalizando pergunta antecipadamente (índice atual: ${lobbyData.currentQuestion})`);
-            endQuestion(lobbyId, lobbyData.currentQuestion);
-          }, 2000);
+          // Finalizar IMEDIATAMENTE sem delay
+          console.log(`⚡ Finalizando pergunta IMEDIATAMENTE (índice atual: ${lobbyData.currentQuestion})`);
+          endQuestion(lobbyId, lobbyData.currentQuestion);
         }
 
       } catch (error) {
