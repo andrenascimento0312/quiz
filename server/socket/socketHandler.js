@@ -378,32 +378,7 @@ function socketHandler(io) {
       }
     });
 
-    // Evento: Participante/Admin confirma que VIU a pergunta
-    socket.on('question_ready', (data) => {
-      try {
-        const { lobbyId } = data;
-        const lobbyData = lobbies.get(lobbyId);
-        
-        if (!lobbyData || lobbyData.timerStarted) return;
-        
-        lobbyData.questionReadyCount = (lobbyData.questionReadyCount || 0) + 1;
-        const totalNeeded = lobbyData.participants.size + 1; // participantes + admin
-        
-        console.log(`✅ Confirmação recebida (${lobbyData.questionReadyCount}/${totalNeeded})`);
-        
-        // Se TODOS confirmaram que viram, iniciar timer IMEDIATAMENTE
-        if (lobbyData.questionReadyCount >= totalNeeded) {
-          console.log(`🎯 TODOS viram a pergunta - iniciando timer AGORA!`);
-          const currentQuestion = lobbyData.quiz[lobbyData.currentQuestion];
-          if (currentQuestion) {
-            startQuestionTimer(lobbyId, lobbyData.currentQuestion, currentQuestion.time_limit_seconds);
-          }
-        }
-        
-      } catch (error) {
-        console.error('Erro ao processar question_ready:', error);
-      }
-    });
+    // SISTEMA question_ready REMOVIDO COMPLETAMENTE - CAUSAVA PROBLEMAS
 
     // Evento: Admin remove participante
     socket.on('kick_participant', async (data) => {
@@ -516,19 +491,16 @@ function socketHandler(io) {
     console.log(`📤 Enviando question_start para lobby ${lobbyId} (pergunta ${questionIndex + 1})`);
     
     // Inicializar sistema de confirmação de recebimento
-    lobbyData.questionReadyCount = 0;
+    // questionReadyCount removido - sistema simplificado
     lobbyData.questionStartTime = null;
     lobbyData.timerStarted = false;
     
     io.to(lobbyId).emit('question_start', questionData);
     
-    console.log(`⏳ Aguardando confirmação de que TODOS viram a pergunta...`);
+    console.log(`🚀 INICIANDO TIMER IMEDIATAMENTE - SEM COMPLICAÇÃO`);
     
-    // Aguardar 1 segundo para garantir que todos receberam a pergunta
-    setTimeout(() => {
-      console.log(`🚀 Iniciando timer da pergunta (todos devem ter visto)`);
-      startQuestionTimer(lobbyId, questionIndex, question.time_limit_seconds);
-    }, 1000);
+    // INICIAR TIMER IMEDIATAMENTE - SIMPLES E FUNCIONAL
+    startQuestionTimer(lobbyId, questionIndex, question.time_limit_seconds);
   }
 
   // Função para iniciar o timer da pergunta (quando todos estão prontos)

@@ -56,9 +56,8 @@ function AdminGame() {
       setAnsweredCount(0)
       setNextQuestionTimer(null) // Resetar timer
       
-      // Admin confirma que VIU a pergunta (crítico para timer justo)
-      console.log('📤 Admin confirmando que VIU a pergunta...')
-      socket.emit('question_ready', { lobbyId })
+      // Sistema simplificado - sem confirmações desnecessárias  
+      console.log('✅ Admin recebeu e exibiu a pergunta!')
     })
 
     socket.on('timer_started', (data) => {
