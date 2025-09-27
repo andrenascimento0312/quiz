@@ -45,6 +45,24 @@ async function initProduction() {
         });
       } else {
         console.log('ℹ️ Admin já existe, pulando criação');
+        
+        // 🛡️ PROTEÇÃO: Verificar se admin específico existe e recriar se necessário
+        const specificAdmin = await runQuery(db, 'SELECT id FROM admins WHERE email = ?', [config.admin.email]);
+        if (!specificAdmin) {
+          console.log('⚠️ Admin específico não encontrado, recriando...');
+          const passwordHash = await bcrypt.hash(config.admin.password, 12);
+          
+          await runQuery(db, `
+            INSERT INTO admins (name, email, password_hash, role, status, approved_at) 
+            VALUES (?, ?, ?, 'superadmin', 'approved', CURRENT_TIMESTAMP)
+          `, [
+            config.admin.name,
+            config.admin.email,
+            passwordHash
+          ]);
+          
+          console.log('✅ Admin específico recriado com segurança');
+        }
       }
     } finally {
       db.close();

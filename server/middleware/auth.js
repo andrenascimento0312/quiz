@@ -24,11 +24,15 @@ async function authenticateToken(req, res, next) {
     db.close();
 
     if (!admin) {
+      console.log('🚨 Admin não encontrado para ID:', decoded.adminId);
       return res.status(401).json({ error: 'Admin não encontrado' });
     }
 
-    // Verificar se conta ainda está ativa
-    if (admin.status !== 'approved') {
+    console.log('🔍 Admin encontrado:', { id: admin.id, email: admin.email, role: admin.role, status: admin.status });
+
+    // Verificar se conta ainda está ativa (compatibilidade com bancos sem status)
+    if (admin.status && admin.status !== 'approved') {
+      console.log('🚨 Admin com status inválido:', admin.status);
       return res.status(401).json({ error: 'Conta não aprovada ou restrita' });
     }
 

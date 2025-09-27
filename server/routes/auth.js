@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const Joi = require('joi');
 const { createConnection, runQuery, getQuery } = require('../database/init');
 const { generateToken, authenticateToken } = require('../middleware/auth');
+const { ensureAdminExists } = require('../middleware/ensureAdmin');
 
 const router = express.Router();
 
@@ -110,7 +111,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/admin/login
-router.post('/login', async (req, res) => {
+router.post('/login', ensureAdminExists, async (req, res) => {
   try {
     // Validar dados
     const { error, value } = loginSchema.validate(req.body);
