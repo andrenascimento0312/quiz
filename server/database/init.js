@@ -1,8 +1,20 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+// Escolher banco automaticamente baseado no ambiente
+const USE_POSTGRES = process.env.DATABASE_URL && process.env.NODE_ENV === 'production';
 
-const DB_PATH = path.join(__dirname, '../data/quiz.db');
+if (USE_POSTGRES) {
+  console.log('🐘 Usando PostgreSQL para produção');
+  module.exports = require('./postgres');
+} else {
+  console.log('📁 Usando SQLite para desenvolvimento');
+  
+  const sqlite3 = require('sqlite3').verbose();
+  const path = require('path');
+  const fs = require('fs');
+
+  // Usar volume persistente no Railway se não tiver PostgreSQL
+  const DB_PATH = process.env.NODE_ENV === 'production' 
+    ? '/app/data/quiz.db'  // Railway volume persistente
+    : path.join(__dirname, '../data/quiz.db'); // Local
 
 // Garantir que o diretório data existe
 function ensureDataDir() {
@@ -161,10 +173,11 @@ async function initDatabase() {
   }
 }
 
-module.exports = {
-  createConnection,
-  runQuery,
-  getQuery,
-  allQuery,
-  initDatabase
-};
+  module.exports = {
+    createConnection,
+    runQuery,
+    getQuery,
+    allQuery,
+    initDatabase
+  };
+} // Fechar bloco SQLite
